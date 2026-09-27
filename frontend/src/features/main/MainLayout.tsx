@@ -1,0 +1,128 @@
+import type { ReactNode } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { AppShell, NavItem, TabBar } from "@/ui";
+import {
+  AccountIcon,
+  CalendarIcon,
+  ForkKnifeIcon,
+  MessagesIcon,
+} from "@/ui/icons";
+
+interface MainLayoutProps {
+  utgid: number;
+}
+
+/**
+ * The main app shell hosting Today/Plan/History/Chat/Profile inside a TabBar
+ * (Fig. `сегодня питание` frames). Navigation targets are provided by the
+ * child routes; this layout only draws the persistent chrome.
+ */
+export function MainLayout(_props: MainLayoutProps) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const chatActive = pathname.startsWith("/chat");
+  const profileActive = pathname.startsWith("/profile");
+
+  return (
+    <AppShell className="pb-20">
+      <Outlet />
+
+      <TabBar
+        left={
+          <button
+            type="button"
+            aria-label="Календарь"
+            onClick={() => navigate("/calendar")}
+            className="flex h-11 w-11 items-center justify-center text-on"
+          >
+            <CalendarIcon size={26} color="currentColor" />
+          </button>
+        }
+        right={
+          <div className="flex items-center gap-5">
+            <NavItem
+              label="Чат"
+              icon={<MessagesIcon size={26} />}
+              active={chatActive}
+              onClick={() => navigate("/chat")}
+            />
+            <NavItem
+              label="Профиль"
+              icon={<AccountIcon size={26} />}
+              active={profileActive}
+              onClick={() => navigate("/profile")}
+            />
+          </div>
+        }
+      />
+    </AppShell>
+  );
+}
+
+/**
+ * The Nutrition ↔ Activity segmented header used on Today/Plan/History.
+ * Fig: title fs32 + segmented toggle (Group 9) + a calendar trigger.
+ */
+export function PlanHeader({
+  title,
+  kind,
+  onKindChange,
+}: {
+  title: ReactNode;
+  kind: "Food" | "Activity";
+  onKindChange: (k: "Food" | "Activity") => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="px-5 pt-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-h1 text-on">{title}</h1>
+        <button
+          type="button"
+          aria-label="Календарь"
+          onClick={() => navigate("/calendar")}
+          className="flex h-11 w-11 items-center justify-center"
+        >
+          <CalendarIcon size={26} color="#f08629" />
+        </button>
+      </div>
+
+      <SegmentedTabs value={kind} onChange={onKindChange} />
+    </div>
+  );
+}
+
+function SegmentedTabs({
+  value,
+  onChange,
+}: {
+  value: "Food" | "Activity";
+  onChange: (k: "Food" | "Activity") => void;
+}) {
+  const items = [
+    { value: "Food" as const, label: "Питание", Icon: ForkKnifeIcon },
+    { value: "Activity" as const, label: "Активность", Icon: null },
+  ];
+  return (
+    <div className="inline-flex rounded-card bg-surface p-1">
+      {items.map((it) => {
+        const active = value === it.value;
+        return (
+          <button
+            key={it.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(it.value)}
+            className={`flex min-h-10 min-w-11 items-center justify-center gap-2 rounded-card px-4 text-bodySm font-medium transition-colors ${
+              active ? "bg-accent text-on" : "bg-transparent text-on"
+            }`}
+          >
+            {it.Icon && <it.Icon size={20} color="currentColor" />}
+            <span>{it.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

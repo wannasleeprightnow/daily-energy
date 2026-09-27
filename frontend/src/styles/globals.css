@@ -2,126 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-	padding: 0px;
-	margin: 0px;
-	border: none;
+/* ------------------------------------------------------------------ */
+/*  TT Firs Neue Trial Var Roman                                       */
+/*  TODO(prod): Trial-license font — replace/purchase before release.  */
+/* ------------------------------------------------------------------ */
+@font-face {
+  font-family: "TT Firs Neue Trial Var";
+  src: url("/src/fonts/TT Firs Neue Trial Var Roman.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
 }
 
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
-
-a,
-a:link,
-a:visited {
-	text-decoration: none;
-}
-
-a:hover {
-	text-decoration: none;
-}
-
-aside,
-nav,
-footer,
-header,
-section,
-main {
-	display: block;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p {
-	font-size: inherit;
-	font-weight: inherit;
-}
-
-ul,
-ul li {
-	list-style: none;
-}
-
-img {
-	vertical-align: top;
-}
-
-img,
-svg {
-	max-width: 100%;
-	height: auto;
-}
-
-address {
-	font-style: normal;
-}
-
-input,
-textarea,
-button,
-select {
-	font-family: inherit;
-	font-size: inherit;
-	color: inherit;
-	background-color: transparent;
-}
-
-input::-ms-clear {
-	display: none;
-}
-
-button,
-input[type="submit"] {
-	display: inline-block;
-	box-shadow: none;
-	background-color: transparent;
-	background: none;
-	cursor: pointer;
-}
-
-input:focus,
-input:active,
-button:focus,
-button:active {
-	outline: none;
-}
-
-button::-moz-focus-inner {
-	padding: 0;
-	border: 0;
-}
-
-label {
-	cursor: pointer;
-}
-
-legend {
-	display: block;
-}
-
-input[type="file"] {
-	max-width: 100%;
-}
-
+html,
+body,
 #root {
-	width: 100dvw;
-	height: 100dvh;
-	background-color: #212121;
+  height: 100%;
 }
 
 body {
-	width: 100dvw;
-	height: 100dvh;
+  margin: 0;
+  background-color: #000;
+  color: #fff;
+  font-family: "TT Firs Neue Trial Var", "TT Firs Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
 }
 
-@font-face {
-	font-family: "Firs Neue";
-	src: url("../fonts/TT Firs Neue Trial Var Roman.ttf") format("truetype");
+/* Desktop shell: center the mobile canvas on a neutral backdrop. */
+#root {
+  display: flex;
+  justify-content: center;
+  background-color: #141414;
+}
+
+/* Reusable layout shell for a phone-sized column (max-w 430px). */
+.app-root {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  background-color: #212121;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+  overflow-x: hidden;
+}
+
+/* iOS safe area handling for the sticky bottom bar */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button {
+  touch-action: manipulation;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Hide number input spinners for a cleaner slider/number UI */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

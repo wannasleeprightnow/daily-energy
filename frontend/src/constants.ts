@@ -1,14 +1,13 @@
-export const QUESTIONS: string[] = [
-  "Как вас зовут?",
-  "Ваш пол:",
-  "Какая у вас цель?",
-  "Ваш вес (в кг):",
-  "Ваш рост (в см):",
-  "Ваша дата рождения",
-  "Ваш уровень физ. активности",
-];
+/**
+ * Global app constants.
+ */
 
-export const MONTHS: string[] = [
+/** Backend base URL (see also example.env / openapi.yml servers block). */
+export const API_URL: string =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  "https://test-srvr.ru";
+
+export const MONTHS_RU: string[] = [
   "Январь",
   "Февраль",
   "Март",
@@ -23,4 +22,10 @@ export const MONTHS: string[] = [
   "Декабрь",
 ];
 
-export const API_URL: string = "https://test-srvr.ru";
+export const APP_VERSION = "2.0.0";
+
+/** Hard caps for onboarding numeric fields (Figma/API constraints). */
+export const LIMITS = {
+  weight: { min: 25, max: 250 },
+  height: { min: 90, max: 250 },
+} as const;
