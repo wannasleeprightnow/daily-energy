@@ -6,7 +6,9 @@ import { Provider } from "@/app/provider";
 import { installTelegramMock } from "@/dev/telegramMock";
 import "@/styles/globals.css";
 
-if (import.meta.env.DEV) {
+// The Telegram WebApp mock is opt-in via VITE_MOCK_TELEGRAM=true so that
+// `npm run dev` behaves like production (real Telegram) by default.
+if (import.meta.env.VITE_MOCK_TELEGRAM === "true") {
   installTelegramMock();
 }
 

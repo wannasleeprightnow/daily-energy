@@ -12,6 +12,7 @@ services:
       - network
     profiles:
       - dev
+      - dev-full
     depends_on:
       - postgres
 
@@ -37,6 +38,7 @@ services:
         condition: service_started
     profiles:
       - dev
+      - dev-full
 
   backend-prod:
     container_name: backend-prod
@@ -102,8 +104,35 @@ services:
       - network
     profiles:
       - dev
+      - dev-full
       - prod
   
+  # Vite dev-server with the Telegram mock enabled. Used by the frontend-only
+  # and full dev modes; hot-reloads from the mounted source tree.
+  frontend-fe:
+    container_name: frontend-fe
+    image: node:23-slim
+    working_dir: /code
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      - VITE_MOCK_TELEGRAM=true
+      - VITE_API_URL=${VITE_API_URL}
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./frontend:/code
+      - frontend-node-modules:/code/node_modules
+    ports:
+      - 5173:5173
+    networks:
+      - network
+    profiles:
+      - dev-fe
+      - dev-full
+  
+  # Production-style frontend image (static build behind nginx). Kept for the
+  # dev profile where the whole stack is built like prod.
   frontend-dev:
     build:
       context: frontend/
@@ -146,6 +175,11 @@ networks:
 volumes:
   postgres-data:
     name: postgres-data
+
+  # Keeps `node_modules` inside the container so the mounted host tree does not
+  # shadow it (avoids ABI/OS mismatches between host and container).
+  frontend-node-modules:
+    name: frontend-node-modules
 
 configs:
   nginx-config-dev:
