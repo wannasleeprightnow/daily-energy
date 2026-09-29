@@ -9,7 +9,7 @@
     Нужен только Docker (Docker Desktop). bash / make не требуются.
 
 .PARAMETER Mode
-    Режим без меню: prod | dev | fe | full
+    Режим без меню: prod | dev | full
 
 .PARAMETER Up
     Сразу выполнить `docker compose up --build` для выбранного режима.
@@ -25,8 +25,8 @@
     Меню + запись .env, затем подсказка как запустить.
 
 .EXAMPLE
-    .\scripts\configure.ps1 fe -Up
-    Настроить режим "fe" (фронт + мок Telegram) и сразу поднять.
+.\scripts\configure.ps1 full -Up
+    Настроить локальный API и frontend с Telegram-моком и сразу поднять.
 
 .EXAMPLE
     .\scripts\configure.ps1 prod -Logs
@@ -35,7 +35,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('prod', 'dev', 'fe', 'full')]
+    [ValidateSet('prod', 'dev', 'full')]
     [string]$Mode,
 
     [switch]$Up,
@@ -65,33 +65,26 @@ $Modes = @{
     }
     dev = @{
         Title    = 'Разработка — только бэкенд (dev)'
-        Desc     = 'postgres + backend + nginx, без фронтенда'
+        Desc     = 'PostgreSQL + локальный backend API, без frontend'
         Profiles = @('dev')
-        Services = 'postgres backend-dev nginx-dev'
+        Services = 'postgres-dev backend-dev'
         MockTg   = 'true'
+        ApiUrl   = 'http://localhost:8080'
         Backend  = 'yes'
         Frontend = 'no'
     }
-    fe = @{
-        Title    = 'Разработка — только фронтенд (dev-fe)'
-        Desc     = 'frontend с моком Telegram, ходит на реальный API'
-        Profiles = @('dev-fe')
-        Services = 'frontend-fe'
-        MockTg   = 'true'
-        Backend  = 'no'
-        Frontend = 'yes'
-    }
     full = @{
-        Title    = 'Разработка — бэкенд + фронтенд (dev-full)'
-        Desc     = 'postgres + backend + nginx + frontend с моком Telegram'
+        Title    = 'Разработка — локальный API + фронтенд (full)'
+        Desc     = 'локальный API + frontend с Telegram WebApp mock'
         Profiles = @('dev-full')
-        Services = 'postgres backend-dev nginx-dev frontend-fe'
+        Services = 'postgres-dev backend-dev frontend-full'
         MockTg   = 'true'
+        ApiUrl   = 'http://localhost:8080'
         Backend  = 'yes'
         Frontend = 'yes'
     }
 }
-$ModeOrder = @('prod', 'dev', 'fe', 'full')
+$ModeOrder = @('prod', 'dev', 'full')
 
 # --- Вспомогательные функции ------------------------------------------------
 function Show-Banner {
@@ -125,8 +118,7 @@ function Select-ModeInteractive {
             'Q' { Write-Host 'Отменено.'; exit 0 }
             '1' { return 'prod' }
             '2' { return 'dev' }
-            '3' { return 'fe' }
-            '4' { return 'full' }
+            '3' { return 'full' }
             default { Write-Host 'Некорректный ввод, попробуйте снова.' -ForegroundColor Yellow }
         }
     }
@@ -171,7 +163,7 @@ function Write-ModeOverlay {
         "MODE=$Key"
         "COMPOSE_PROFILES=$profiles"
         "VITE_MOCK_TELEGRAM=$($Modes[$Key].MockTg)"
-        'VITE_API_URL='
+        "VITE_API_URL=$($Modes[$Key].ApiUrl)"
     )
     Set-Content -LiteralPath $ModeFile -Value $content -Encoding UTF8
 }
@@ -201,7 +193,7 @@ Write-ModeOverlay -Key $Mode
 
 # Зеркалим фронтовые флаги в .env, чтобы совпадало с docker compose / vite.
 Set-EnvVar -Path $EnvFile -Key 'VITE_MOCK_TELEGRAM' -Value $m.MockTg
-Set-EnvVar -Path $EnvFile -Key 'VITE_API_URL' -Value ''
+Set-EnvVar -Path $EnvFile -Key 'VITE_API_URL' -Value $m.ApiUrl
 
 Write-Host ''
 Write-Host 'Готово. ' -ForegroundColor Green -NoNewline

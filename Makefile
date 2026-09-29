@@ -16,9 +16,9 @@ COMPOSE_PROFILES ?=
 # Build the `--profile` flags from the space-separated COMPOSE_PROFILES list.
 PROFILE_FLAGS = $(foreach p,$(COMPOSE_PROFILES),--profile $(p))
 
-.PHONY: help configure configure-prod configure-dev configure-fe configure-full \
-        up down logs restart ps build \
-        dev dev-backend dev-frontend dev-full \
+.PHONY: help configure configure-prod configure-dev configure-full \
+        up down stop logs restart ps build \
+        dev dev-backend dev-full \
         prod build-frontend build-backend format
 
 # ---------------------------------------------------------------------------
@@ -30,19 +30,18 @@ help:
 	@echo "  make configure        Интерактивное меню выбора режима"
 	@echo "  make configure-prod   Режим 'prod' (без меню)"
 	@echo "  make configure-dev    Режим 'dev' — только бэкенд"
-	@echo "  make configure-fe     Режим 'dev-fe' — только фронтенд (мок Telegram)"
-	@echo "  make configure-full   Режим 'dev-full' — бэкенд + фронтенд (мок Telegram)"
+	@echo "  make configure-full   Режим 'dev-full' — локальный API + фронтенд (мок Telegram)"
 	@echo ""
 	@echo "  make up               Запустить стек текущего режима (build + up)"
 	@echo "  make down             Остановить стек и удалить тома"
+	@echo "  make stop             Остановить стек, сохранив данные БД"
 	@echo "  make logs             Смотреть логи"
 	@echo "  make ps               Статус контейнеров"
 	@echo "  make restart          Перезапустить стек"
 	@echo ""
 	@echo "  make dev              configure-dev + up + logs"
 	@echo "  make dev-backend      configure-dev + up + logs (только бэк)"
-	@echo "  make dev-frontend     configure-fe + up + logs (только фронт, мок ТГ)"
-	@echo "  make dev-full         configure-full + up + logs (бэк + фронт, мок ТГ)"
+	@echo "  make dev-full         configure-full + up + logs (локальный API + фронт)"
 	@echo "  make prod             configure-prod + up + logs"
 	@echo ""
 	@echo "  make format           gofmt + prettier (если доступен)"
@@ -61,13 +60,10 @@ configure-prod:
 configure-dev:
 	$(CONFIGURE) dev
 
-configure-fe:
-	$(CONFIGURE) fe
-
 configure-full:
 	$(CONFIGURE) full
 
-# ---------------------------------------------------------------------------
+# ---------------------------PROFILE_FL------------------------------------------------
 # Compose helpers (profiles come from .env.mode)
 # ---------------------------------------------------------------------------
 guard-mode:
@@ -81,6 +77,9 @@ up: guard-mode
 
 down: guard-mode
 	$(DC) $(PROFILE_FLAGS) down -v
+
+stop: guard-mode
+	$(DC) $(PROFILE_FLAGS) down
 
 logs: guard-mode
 	$(DC) $(PROFILE_FLAGS) logs -f
@@ -97,11 +96,17 @@ build: guard-mode
 # ---------------------------------------------------------------------------
 # One-shot mode shortcuts
 # ---------------------------------------------------------------------------
-dev: configure-dev up logs
-dev-backend: configure-dev up logs
-dev-frontend: configure-fe up logs
-dev-full: configure-full up logs
-prod: configure-prod up logs
+dev: configure-dev
+	$(MAKE) up logs
+
+dev-backend: configure-dev
+	$(MAKE) up logs
+
+dev-full: configure-full
+	$(MAKE) up logs
+
+prod: configure-prod
+	$(MAKE) up logs
 
 # ---------------------------------------------------------------------------
 # Image builds / formatting (unchanged helpers)

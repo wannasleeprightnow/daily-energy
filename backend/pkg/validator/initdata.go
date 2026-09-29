@@ -1,16 +1,17 @@
 package validator
 
 import (
-	// "crypto/hmac"
-	// "crypto/sha256"
-	// "encoding/hex"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
-	// "sort"
+	"sort"
 	"strconv"
-	// "strings"
-	// "time"
+	"strings"
+	"time"
 )
 
 func GetTelegramUserID(initData string, botToken string) (string, error) {
@@ -18,10 +19,13 @@ func GetTelegramUserID(initData string, botToken string) (string, error) {
 		return "", errors.New("initData is empty")
 	}
 
-	params, _ := url.ParseQuery(initData)
-	// if err != nil || !validateInitData(params, botToken) {
-	// 	return "", errors.New("invalid telegram initData")
-	// }
+	params, err := url.ParseQuery(initData)
+	if err != nil {
+		return "", errors.New("invalid telegram initData")
+	}
+	if !validateInitData(params, botToken) {
+		return "", errors.New("invalid telegram initData signature")
+	}
 
 	var user struct{ ID int64 }
 	if err := json.Unmarshal([]byte(params.Get("user")), &user); err != nil {
@@ -31,37 +35,39 @@ func GetTelegramUserID(initData string, botToken string) (string, error) {
 	return strconv.FormatInt(user.ID, 10), nil
 }
 
-// func validateInitData(params url.Values, botToken string) bool {
-// 	if authDate, err := strconv.ParseInt(params.Get("auth_date"), 10, 64); err == nil {
-// 		if time.Since(time.Unix(authDate, 0)) > 10*time.Minute {
-// 			return false
-// 		}
-// 	}
+func validateInitData(params url.Values, botToken string) bool {
+	hash := params.Get("hash")
+	if hash == "" || botToken == "" {
+		return false
+	}
 
-// 	hash := params.Get("hash")
-// 	if params.Get("hash") == "" {
-// 		return false
-// 	}
+	authDate, err := strconv.ParseInt(params.Get("auth_date"), 10, 64)
+	if err != nil {
+		return false
+	}
+	issuedAt := time.Unix(authDate, 0)
+	if time.Since(issuedAt) > 24*time.Hour || issuedAt.After(time.Now().Add(time.Minute)) {
+		return false
+	}
 
-// 	secret := hmac.New(sha256.New, []byte("WebAppData"))
-// 	secret.Write([]byte(botToken))
+	keys := make([]string, 0, len(params)-1)
+	for key := range params {
+		if key != "hash" {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
 
-// 	var dataCheck strings.Builder
-// 	keys := make([]string, 0, len(params)-1)
+	lines := make([]string, 0, len(keys))
+	for _, key := range keys {
+		lines = append(lines, fmt.Sprintf("%s=%s", key, params.Get(key)))
+	}
+	dataCheckString := strings.Join(lines, "\n")
 
-// 	for k := range params {
-// 		if k != "hash" {
-// 			keys = append(keys, k)
-// 		}
-// 	}
-// 	sort.Strings(keys)
-
-// 	for _, k := range keys {
-// 		dataCheck.WriteString(k + "=" + params.Get(k) + "\n")
-// 	}
-// 	dataCheckStr := strings.TrimSuffix(dataCheck.String(), "\n")
-
-// 	h := hmac.New(sha256.New, secret.Sum(nil))
-// 	h.Write([]byte(dataCheckStr))
-// 	return hex.EncodeToString(h.Sum(nil)) == hash
-// }
+	secretMAC := hmac.New(sha256.New, []byte(botToken))
+	secretMAC.Write([]byte("WebAppData"))
+	dataMAC := hmac.New(sha256.New, secretMAC.Sum(nil))
+	dataMAC.Write([]byte(dataCheckString))
+	calculatedHash := fmt.Sprintf("%x", dataMAC.Sum(nil))
+	return len(hash) == len(calculatedHash) && subtle.ConstantTimeCompare([]byte(hash), []byte(calculatedHash)) == 1
+}

@@ -1,156 +1,133 @@
-# Daily Energy Telegram Mini-App
+# Daily Energy — Telegram Mini App
 
-## Overview
-The Daily Energy Telegram Mini-App is a user-friendly tool designed to help individuals track their daily activity, calorie intake, and energy levels. It offers an intuitive interface for setting personal details, monitoring progress, and receiving personalized feedback from an AI assistant.
+Приложение помогает вести историю питания и активности, смотреть планы и общаться с AI-помощником Рафиком. Данные приложения хранятся в PostgreSQL. Расчёты калорий, планы и ответы чата запрашиваются у настроенного AI API.
 
-## Functionality
+## Возможности
 
-### Registration
-The initial setup process guides users through entering personal details to create a profile. Upon successful registration, the AI generates a personalized 7-day plan for food and activity based on the provided data.  
-<p align="center">
-  <img src="misc/img/greeting.png" height=300px alt="Welcome Screen">  
-  <img src="misc/img/input_name.png" height=300px alt="Name Input">  
-  <img src="misc/img/choose_gender.png" height=300px alt="Gender Selection">  
-  <img src="misc/img/choose_aim.png" height=300px alt="Goal Selection">  
-  <img src="misc/img/choose_weight.png" height=300px alt="Weight Input">  
-  <img src="misc/img/choose_height.png" height=300px alt="Height Input">  
-  <img src="misc/img/choose_day_of_birth.png" height=300px alt="Date of Birth Selection">  
-  <img src="misc/img/choose_physical_activity.png" height=300px alt="Activity Level Selection">  
-</p>
+- Профиль пользователя и первичная настройка.
+- Ежедневная история питания и активности.
+- AI-оценка калорий для добавленной еды.
+- Персональный план питания и тренировок на 7 дней.
+- История и просмотр плана по датам.
+- Чат с AI-помощником.
 
-### Interactive Chat with the AI Assistant Rafik (Mascot)
-Users can engage in an interactive chat with Rafik, the AI mascot, for personalized advice and support.  
-<p align="center">
-  <img src="misc/img/ai_chat_start.png" height=300px alt="Chat Start">  
-  <img src="misc/img/ai_chat.png" height=300px alt="Chat Interface">  
-</p>
+В приложении нет локальных ответов-заглушек для AI и подмены ответов backend. Локальная разработка использует настоящие API-обработчики и локальную PostgreSQL. Для запуска AI-функций нужен действующий `API_KEY`.
 
-### View and Add Today's Food and Activities
-Track and log daily food intake and physical activities. When entering a food name, the AI calculates the average calorie content of a typical serving.  
-<p align="center">
-  <img src="misc/img/view_today_activity.png" height=300px alt="View Today's Activity">  
-  <img src="misc/img/view_today_food.png" height=300px alt="View Today's Food">  
-</p>
-<p align="center">
-  <img src="misc/img/add_today_activity.png" height=300px alt="Add Today's Activity">  
-  <img src="misc/img/add_today_food.png" height=300px alt="Add Today's Food">  
-</p>
+## Требования
 
-### View History and Plan for Food and Activities
-Review historical data and access the 7-day plan generated during registration for both food and activities.  
-<p align="center">
-  <img src="misc/img/view_history_activity.png" height=300px alt="View Activity History">  
-  <img src="misc/img/view_history_food.png" height=300px alt="View Food History">
-</p>
-<p align="center">
-  <img src="misc/img/view_activity_plan.png" height=300px alt="View Activity Plan">  
-  <img src="misc/img/view_food_plan.png" height=300px alt="View Food Plan">  
-</p>
+- Docker Engine и Docker Compose v2.
+- Для локального запуска frontend вне Docker: Node.js и npm.
+- Для AI-функций: ключ API провайдера, совместимого с OpenAI Chat Completions API.
 
-### Calendar
-Select a specific day to view its history or plan details.  
-<p align="center">
-  <img src="misc/img/calendar.png" height=300px alt="Calendar">  
-</p>
+## Быстрый запуск: frontend и backend
 
-### Profile
-View personal progress dynamics and edit profile details as needed.  
-<p align="center">
-  <img src="misc/img/profile.png" height=300px alt="Profile Overview">  
-  <img src="misc/img/edit_profile.png" height=300px alt="Edit Profile">  
-</p>
-
-## ER-diagram
-
-<img src="misc/img/er-diagram.svg" height=500px alt="Edit Profile">
-
-## Запуск проекта
-
-Окружение настраивается интерактивным скриптом [`scripts/configure.sh`](scripts/configure.sh),
-который спрашивает режим и генерирует `.env` + `.env.mode` (последний хранит
-выбранный режим и набор compose-профилей).
+Из корня проекта:
 
 ```bash
-make configure     # интерактивное меню
-make up            # поднять стек выбранного режима
-make down          # остановить и удалить тома
-make logs          # логи
+make configure-full
+make up
 ```
 
-Меню предлагает четыре режима:
+Откройте frontend: [http://localhost:5173](http://localhost:5173). Backend API и Swagger UI доступны по адресам [http://localhost:8080/api/ping](http://localhost:8080/api/ping) и [http://localhost:8080/api/docs](http://localhost:8080/api/docs).
 
-| # | Режим | Профиль | Что поднимается | Мок Telegram |
-|---|-------|---------|-----------------|--------------|
-| 1 | `prod` | `prod` | postgres + backend + frontend + nginx (HTTPS) | нет |
-| 2 | `dev` | `dev` | postgres + backend + nginx (только бэкенд) | — |
-| 3 | `fe` | `dev-fe` | frontend (Vite dev-server) | да |
-| 4 | `full` | `dev-full` | postgres + backend + nginx + frontend | да |
+Конфигуратор создаёт `.env` из `example.env`, если файла ещё нет, и записывает выбранные настройки запуска. Для AI-функций укажите `API_KEY` в `.env` до запуска. Локальная база использует отдельный volume `postgres-dev-data` и значения подключения, заданные в Docker Compose.
 
-То же самое можно сделать без меню и одной командой:
+В режиме `full` работает Telegram-мок: frontend подменяет Telegram WebApp в обычном браузере, а локальный backend принимает его тестового пользователя. Мок относится только к Telegram-окружению и проверке Telegram-подписи. Запросы пользователей, планы, история и AI-функции обрабатываются настоящими backend-обработчиками; данные сохраняются в локальной PostgreSQL.
+
+### Только backend
+
+Чтобы запустить локальную PostgreSQL и API без frontend:
 
 ```bash
-make prod           # configure-prod + up + logs
-make dev-backend    # configure-dev  + up + logs
-make dev-frontend   # configure-fe   + up + logs
-make dev-full       # configure-full + up + logs
+make configure-dev
+make up
 ```
 
-### Windows / PowerShell
+Swagger UI: [http://localhost:8080/api/docs](http://localhost:8080/api/docs). Для вызовов защищённых API из Swagger включён локальный Telegram auth mock и назначается ID `777000`.
 
-На хосте-Windows нет `make` и `docker` в `PATH`, поэтому есть три пути. Проще
-всего — работать из WSL.
+### Запуск frontend отдельно
 
-**1. Через WSL (рекомендуется).** Проект лежит по пути
-`/mnt/c/Users/Вадим/Desktop/dEnergy/daily-energy`, внутри стоят `make` и `docker`:
+После `make configure-dev` откройте второй терминал:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite доступен на [http://localhost:5174](http://localhost:5174) и использует корневой `.env`, созданный конфигуратором. Telegram-мок включён в режимах `dev` и `full`. Изменения frontend применяются автоматически.
+
+## Настройки окружения
+
+Основные настройки находятся в корневом `.env`; шаблон — [`example.env`](example.env). Конфигураторы `make configure-*` не перезаписывают API-ключи и настройки базы, а обновляют только параметры выбранного режима.
+
+| Переменная | Назначение |
+| --- | --- |
+| `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | Подключение backend к PostgreSQL; в локальных режимах значения базы задаёт Docker Compose. |
+| `TELEGRAM_BOT_TOKEN` | Проверка подписи Telegram `initData` в production и запуск Telegram-бота. В локальных режимах auth mock включён отдельно в Docker Compose. |
+| `API_PATH` | URL endpoint AI API. В шаблоне указан OpenRouter Chat Completions endpoint. |
+| `API_KEY` | Ключ AI API; нужен для расчёта калорий, генерации планов и чата. |
+| `ALLOW_ORIGINS` | Разрешённые origin для HTTP API. |
+| `SERVER_NAME` | Домен production-конфигурации Nginx. |
+| `VITE_API_URL` | Базовый URL backend для frontend. В локальных режимах конфигуратор указывает `http://localhost:8080`; пустое значение использует production URL из `frontend/src/constants.ts`. |
+| `VITE_MOCK_TELEGRAM` | Включает frontend-мок Telegram WebApp (`true` в локальных режимах, `false` в production). |
+
+Сейчас используется модель `nvidia/nemotron-3-ultra-550b-a55b:free`; её имя задано в `backend/internal/interfaces/http/ai/generate_message.go`. Поменять endpoint можно через `API_PATH`, а ключ храните только в `.env` и не добавляйте в репозиторий.
+
+## Production
+
+Production-профиль использует опубликованные Docker-образы, PostgreSQL и Nginx с HTTPS. Укажите production-значения `DB_*`, `TELEGRAM_BOT_TOKEN`, `API_KEY`, `DOCKER_USERNAME`, `TAG`, `SERVER_NAME` и другие необходимые параметры в `.env`, затем выполните:
+
+```bash
+make configure-prod
+make up
+```
+
+В production Telegram-мок отключён, а backend проверяет подпись `initData`. AI-запросы идут к реальному endpoint, заданному `API_PATH`.
+
+Перед переключением между профилями остановите предыдущий стек:
+
+```bash
+make stop
+```
+
+`make stop` останавливает сервисы и сохраняет данные. `make down` удаляет контейнеры и volumes выбранного профиля, включая сохранённые данные базы.
+
+## Windows / PowerShell
+
+С Docker Desktop можно настроить и сразу запустить профиль:
 
 ```powershell
-wsl                          # войти в Fedora
-cd /mnt/c/Users/Вадим/Desktop/dEnergy/daily-energy
-make configure               # меню режимов
-make up                      # поднять стек выбранного режима
+.\scripts\configure.ps1 full -Up
 ```
 
-Docker-демон в WSL доступен только через `sudo`, поэтому Makefile использует
-`DC = sudo docker compose` (при первом `make up` может спросить пароль).
+Также доступны режимы `dev` и `prod`. Чтобы только записать настройки, уберите `-Up`, затем запустите `docker compose --profile <профиль> up --build`, как подскажет скрипт. В WSL доступны команды `make configure-full` и `make up`.
 
-**2. Одна команда без входа в WSL (из PowerShell):**
+## Полезные команды
 
-```powershell
-wsl bash -lc "cd /mnt/c/Users/Вадим/Desktop/dEnergy/daily-energy && make configure-full"
-```
+| Команда | Действие |
+| --- | --- |
+| `make help` | Показать команды и активный профиль. |
+| `make configure` | Выбрать режим интерактивно. |
+| `make configure-dev` | Настроить backend и PostgreSQL для локальной разработки. |
+| `make configure-full` | Настроить frontend, backend и PostgreSQL. |
+| `make configure-prod` | Настроить production-профиль. |
+| `make up` | Собрать и запустить сервисы выбранного профиля. |
+| `make logs` | Смотреть логи. |
+| `make ps` | Показать состояние сервисов. |
+| `make restart` | Перезапустить сервисы активного профиля. |
+| `make stop` | Остановить сервисы, сохранив volumes. |
+| `make down` | Остановить сервисы и удалить volumes активного профиля. |
 
-Остальные ярлыки: `make configure-dev`, `make configure-fe`, `make configure-prod`.
+## Telegram-мок
 
-**3. Нативный PowerShell-скрипт** (без bash/make, нужен только Docker):
+`frontend/src/dev/telegramMock.ts` подменяет объект `window.Telegram.WebApp` в обычном браузере, чтобы локально разрабатывать интерфейс Mini App. Мок предоставляет тестовый профиль с ID `777000` и используется только при `VITE_MOCK_TELEGRAM=true`.
 
-```powershell
-.\scripts\configure.ps1            # интерактивное меню + запись .env
-.\scripts\configure.ps1 fe -Up     # режим "fe" и сразу поднять стек
-.\scripts\configure.ps1 prod -Logs # режим "prod" и смотреть логи
-```
+В локальных профилях Compose отключает проверку Telegram-подписи и назначает запросам тестовый ID `777000`, чтобы Telegram-мок мог обращаться к локальному API. В production этот режим выключен: backend проверяет подпись настоящего `initData`. Ответы API, данные и AI-функции не подменяются.
 
-Также есть [`scripts/configure.cmd`](scripts/configure.cmd) — обёртка, которая
-делегирует в WSL или Git Bash.
+## Технологии
 
-### Мок Telegram
-
-Мок `window.Telegram.WebApp` включается только при `VITE_MOCK_TELEGRAM=true`
-и живёт в [`src/dev/telegramMock.ts`](frontend/src/dev/telegramMock.ts). Во всех
-дев-режимах фронтенд ходит на **реальный** API; базовый URL задаётся через
-`VITE_API_URL` (см. [`src/constants.ts`](frontend/src/constants.ts)). Значения
-`VITE_MOCK_TELEGRAM` и `VITE_API_URL` записываются в `.env` скриптом конфигурации.
-
-## Techologies
-
-1. Golang
-2. Typescript
-3. gin
-4. gorm
-5. PostgreSQL
-6. React
-7. React Query
-8. TailwindCSS
-9. nginx
-10. docker compose
-
-As AI model we use openrouter/cypher-alpha:free.
+- Go, Gin, GORM и PostgreSQL.
+- React, TypeScript, Vite, React Query и Tailwind CSS.
+- Docker Compose и Nginx.
+- OpenRouter Chat Completions API с моделью `nvidia/nemotron-3-ultra-550b-a55b:free`.

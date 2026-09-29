@@ -9,7 +9,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -32,7 +31,7 @@ func (h *AiHandler) CalculationCalories(c *gin.Context) {
 	}
 
 	jsonData, err := ai.GenerateMessage(
-		string(h.cnfg.CaloriesAnalyzer),
+		"Estimate calories for the specified food portion. Return only one integer: the total kilocalories for the stated portion. Do not include units, explanation, alternatives, ranges, or Markdown. If preparation is unspecified, assume the food is cooked with water.",
 		fmt.Sprintf("%s %s", h.cnfg.FoodToAnalyze, cReq.Title))
 
 	if err != nil {
@@ -69,16 +68,12 @@ func (h *AiHandler) CalculationCalories(c *gin.Context) {
 
 	content := strings.TrimSpace(aiResp.Choices[0].Message.Content)
 
-	fmt.Println("AI raw content:", content)
-
 	if content == "null" || content == "\"null\"" {
 		c.JSON(http.StatusOK, dto.CaloriesResponse{Calories: nil})
 		return
 	}
 
-	content = strings.Trim(content, "\"")
-
-	calories, err := strconv.ParseFloat(content, 64)
+	calories, err := parseCalories(content)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to parse calories float",

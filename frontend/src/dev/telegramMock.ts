@@ -8,8 +8,8 @@ const mockUser = {
 	first_name: "Dev",
 	last_name: "User",
 	username: "dev_user",
-	language_code: "ru",
-	is_premium: false,
+		language_code: "ru",
+		is_premium: false,
 };
 
 export function installTelegramMock() {
@@ -20,9 +20,10 @@ export function installTelegramMock() {
 		return;
 	}
 
-	window.Telegram = {
-		WebApp: {
-			initData: "dev-mock-init-data",
+  window.Telegram = {
+    WebApp: {
+			// The local backend's Telegram auth mock supplies the development ID.
+			initData: "",
 			initDataUnsafe: { user: mockUser },
 			close: () => {},
 			sendData: () => {},
@@ -47,5 +48,4 @@ export function installTelegramMock() {
 		},
 	};
 
-	console.info("[telegramMock] No Telegram user found - using mock:", mockUser);
 }

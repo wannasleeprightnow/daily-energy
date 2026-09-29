@@ -5,8 +5,7 @@ import { API_URL } from "@/constants";
  * Axios instance preconfigured with the backend base URL.
  *
  * Auth: the Telegram `initData` is sent as a header on every request
- * (matching the existing backend middleware). The value is read lazily so the
- * mock / real environments both work.
+ * (matching the backend middleware). The value is read lazily from Telegram.
  */
 export const http: AxiosInstance = axios.create({
   baseURL: API_URL,

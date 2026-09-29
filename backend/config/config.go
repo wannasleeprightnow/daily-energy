@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/spf13/viper"
 )
 
@@ -15,6 +18,7 @@ type Config struct {
 	DBPassword       string `mapstructure:"DB_PASSWORD"`
 	DBName           string `mapstructure:"DB_NAME"`
 	TelegramBotToken string `mapstructure:"TELEGRAM_BOT_TOKEN"`
+	MockTelegramAuth bool   `mapstructure:"MOCK_TELEGRAM_AUTH"`
 	ApiPath          string `mapstructure:"API_PATH"`
 	ApiKey           string `mapstructure:"API_KEY"`
 	AllowOrigins     string `mapstructure:"ALLOW_ORIGINS"`
@@ -32,6 +36,15 @@ func LoadConfig() (Config, error) {
 	err := viper.Unmarshal(&c)
 	if err != nil {
 		return c, fmt.Errorf("unable to decode into struct: %v", err)
+	}
+	if mockAuth, ok := os.LookupEnv("MOCK_TELEGRAM_AUTH"); ok {
+		c.MockTelegramAuth, err = strconv.ParseBool(mockAuth)
+		if err != nil {
+			return c, fmt.Errorf("invalid MOCK_TELEGRAM_AUTH value: %v", err)
+		}
+	}
+	if apiKey, ok := os.LookupEnv("API_KEY"); ok {
+		c.ApiKey = apiKey
 	}
 	c.TelegramApiUrl = fmt.Sprintf("https://api.telegram.org/bot%s", c.TelegramBotToken)
 

@@ -50,17 +50,31 @@ export function ActionList({
 /** Semicircular progress + "N kcal remaining" label. */
 export function ProgressRingBlock({
   remaining,
+  target,
+  isLoading,
 }: {
-  remaining: number;
+  remaining: number | null;
+  target: number | null;
+  isLoading: boolean;
 }) {
-  const total = 2000;
-  const progress = Math.max(0, Math.min(1, remaining / total));
+  const progress =
+    remaining === null || !target
+      ? 0
+      : Math.max(0, Math.min(1, remaining / target));
   return (
     <ProgressRing progress={progress} size={126} thickness={6}>
       <span className="text-center text-[15px] leading-[19px] text-on/90">
-        {remaining} kcal
-        <br />
-        remaining
+        {isLoading ? (
+          "Загрузка…"
+        ) : remaining === null ? (
+          "План не создан"
+        ) : (
+          <>
+            {remaining} kcal
+            <br />
+            remaining
+          </>
+        )}
       </span>
     </ProgressRing>
   );
@@ -77,12 +91,6 @@ export function AiAdviceCard({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
-/** Default advice palette per kind (kept consistent with the mockups). */
-export const DEFAULT_ADVICE: Record<"Food" | "Activity", string> = {
-  Food: "Норма белка: 2г на кг веса, 2 литра воды, 1800 ккал",
-  Activity: "Турники, Отжимания, Пресс",
-};
 
 /** Loading slot inside the content card. */
 export function CardLoading() {

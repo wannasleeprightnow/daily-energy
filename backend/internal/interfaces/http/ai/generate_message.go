@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 )
 
+const ModelName = "nvidia/nemotron-3-ultra-550b-a55b:free"
+
 func GenerateMessage(systemPrompt string, userPrompt string) ([]byte, error) {
 	requestBody := ChatRequest{
-		Model: "openrouter/cypher-alpha:free",
+		Model: ModelName,
 		Messages: []Message{
 			{
 				Role:    "system",

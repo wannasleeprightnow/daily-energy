@@ -138,10 +138,8 @@ func (h *PlanHandler) CreatePlan(c *gin.Context) {
 	}
 
 	content := strings.TrimSpace(aiResp.Choices[0].Message.Content)
-	log.Printf("AI raw content: %s", content)
 
 	content = strings.Trim(content, "\"")
-	log.Printf("AI parsed content: %s", content)
 
 	var planContent dto.AIPlanContent
 	if err := json.Unmarshal([]byte(content), &planContent); err != nil {

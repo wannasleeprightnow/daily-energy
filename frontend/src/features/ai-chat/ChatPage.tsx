@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell, Button } from "@/ui";
 import { useUser } from "@/hooks/useUser";
-import { getTgUser } from "@/lib/telegram";
+import { getInitData, getTgUser } from "@/lib/telegram";
+import { API_URL } from "@/constants";
 
 interface Message {
   id: number;
@@ -9,12 +10,14 @@ interface Message {
   text: string;
 }
 
+type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected";
+
 /**
  * AI Chat screen (Figma `ИИ-аgent старт` 28:8 / `ИИ-агент чат` 122:703).
  *
  * Greeting names the user and introduces "Рафик". Bubbles: assistant `#1c1c1c`,
- * user `#303030`; input r17 `#000`. Replies are local for now (no chat
- * contract in openapi.yml) — swap in the real endpoint when it lands.
+ * user `#303030`; input r17 `#000`. Messages are exchanged with the backend
+ * over WebSocket.
  */
 export function ChatPage() {
   const tgUser = getTgUser();
@@ -24,30 +27,99 @@ export function ChatPage() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
   const listRef = useRef<HTMLDivElement | null>(null);
   const idRef = useRef(1);
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const endpoint = new URL("/api/ws/chat", API_URL);
+    endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+    const initData = getInitData();
+    const protocols = initData
+      ? [`daily-energy-initdata.${toBase64Url(initData)}`, "daily-energy-chat"]
+      : undefined;
+
+    let disposed = false;
+    let retryTimer: number | undefined;
+    let retryAttempt = 0;
+
+    const connect = () => {
+      if (disposed) return;
+      setConnectionState(retryAttempt === 0 ? "connecting" : "reconnecting");
+
+      const socket = protocols
+        ? new WebSocket(endpoint, protocols)
+        : new WebSocket(endpoint);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        if (disposed || socketRef.current !== socket) return;
+        retryAttempt = 0;
+        setConnectionState("connected");
+        setError(null);
+      };
+      socket.onmessage = (event) => {
+        if (disposed || socketRef.current !== socket) return;
+        setMessages((current) => [
+          ...current,
+          { id: idRef.current++, role: "assistant", text: String(event.data) },
+        ]);
+        setBusy(false);
+      };
+      socket.onclose = () => {
+        if (socketRef.current === socket) socketRef.current = null;
+        if (disposed) return;
+        setBusy(false);
+        setConnectionState("reconnecting");
+        setError("Связь с чатом прервалась. Переподключаюсь…");
+        const delay = Math.min(1000 * 2 ** retryAttempt, 10000);
+        retryAttempt += 1;
+        retryTimer = window.setTimeout(connect, delay);
+      };
+    };
+
+    // React StrictMode runs effect setup, cleanup, then setup again in dev.
+    // Delay the first handshake so the throwaway setup is cancelled before it
+    // can open a socket that the backend would observe as an abnormal close.
+    retryTimer = window.setTimeout(connect, 0);
+
+    return () => {
+      disposed = true;
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      const socket = socketRef.current;
+      socketRef.current = null;
+      // Don't trigger a reconnect for React StrictMode's dev-only cleanup.
+      socket?.close(1000, "component unmounted");
+    };
+  }, []);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: 999999, behavior: "smooth" });
   }, [messages]);
 
-  const send = () => {
+  const send = useCallback(() => {
     const text = draft.trim();
-    if (!text) return;
+    const socket = socketRef.current;
+    if (!text || busy) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      setError("Соединение с чатом ещё не установлено. Подожди переподключения и отправь сообщение снова.");
+      return;
+    }
+
+    setError(null);
     setMessages((m) => [...m, { id: idRef.current++, role: "user", text }]);
     setDraft("");
-    window.setTimeout(() => {
-      setMessages((m) => [
-        ...m,
-        {
-          id: idRef.current++,
-          role: "assistant",
-          text:
-            "Принял! Я обновил информацию по потреблённым калориям и внёс это в твой план. Ты молодец! ✨",
-        },
-      ]);
-    }, 500);
-  };
+    setBusy(true);
+    try {
+      socket.send(text);
+    } catch {
+      setBusy(false);
+      setError("Не удалось отправить сообщение. Попробуй ещё раз.");
+    }
+  }, [busy, draft]);
 
   return (
     <AppShell className="flex-col">
@@ -71,6 +143,19 @@ export function ChatPage() {
           изменения в персональный план.
         </p>
 
+        <p className="mt-2 text-center text-xs text-on/50" role="status">
+          {connectionState === "connected" && "Чат подключён"}
+          {connectionState === "connecting" && "Подключаюсь к чату…"}
+          {connectionState === "reconnecting" && "Переподключаюсь к чату…"}
+          {connectionState === "disconnected" && "Чат не подключён"}
+        </p>
+
+        {error && (
+          <p role="alert" className="mt-3 text-center text-bodySm text-danger">
+            {error}
+          </p>
+        )}
+
         <div
           ref={listRef}
           className="mt-5 flex flex-1 flex-col gap-3 overflow-y-auto pb-3"
@@ -82,6 +167,7 @@ export function ChatPage() {
             value={draft}
             onChange={setDraft}
             onSend={send}
+            disabled={busy || connectionState !== "connected"}
             placeholder="Пиши сюда..."
           />
         </div>
@@ -107,11 +193,13 @@ function ChatInput({
   value,
   onChange,
   onSend,
+  disabled,
   placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
+  disabled: boolean;
   placeholder: string;
 }) {
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -132,7 +220,7 @@ function ChatInput({
       />
       <Button
         onClick={onSend}
-        disabled={!value.trim()}
+        disabled={!value.trim() || disabled}
         aria-label="Отправить"
         className="h-11 w-11 shrink-0 rounded-full px-0 text-h2"
       >
@@ -140,4 +228,11 @@ function ChatInput({
       </Button>
     </div>
   );
+}
+
+function toBase64Url(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }

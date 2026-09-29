@@ -14,8 +14,7 @@
 # Modes:
 #   prod   — production: postgres + backend + frontend + nginx        (profiles: prod)
 #   dev    — backend only (infra + API)                               (profiles: dev)
-#   fe     — frontend only, mocked Telegram, real API                 (profiles: dev-fe)
-#   full   — backend + frontend, mocked Telegram                      (profiles: dev-full)
+#   full   — local API + frontend, mocked Telegram                    (profiles: dev-full)
 #
 set -euo pipefail
 
@@ -36,11 +35,11 @@ MODE_FILE="${ROOT_DIR}/.env.mode"
 # Each mode is described by:
 #   profiles  — docker compose profiles passed via --profile
 #   services  — human readable service list for the summary
-#   mock_tg   — value written to VITE_MOCK_TELEGRAM
+#   mock_tg   — whether to install the Telegram WebApp mock
 #   api_url   — value written to VITE_API_URL (frontend base url)
 #   backend   — whether the backend is expected to run
 #   frontend  — whether the frontend is expected to run
-ALL_MODES=(prod dev fe full)
+ALL_MODES=(prod dev full)
 
 describe_mode() {
 	case "$1" in
@@ -56,31 +55,21 @@ describe_mode() {
 			;;
 		dev)
 			MODE_TITLE="Разработка — только бэкенд (dev)"
-			MODE_DESC="postgres + backend + nginx, без фронтенда"
+			MODE_DESC="PostgreSQL + локальный backend API, без frontend"
 			MODE_PROFILES="dev"
-			MODE_SERVICES="postgres backend-dev nginx-dev"
+			MODE_SERVICES="postgres-dev backend-dev"
 			MODE_MOCK_TG="true"
-			MODE_API_URL=""
+			MODE_API_URL="http://localhost:8080"
 			MODE_BACKEND="yes"
 			MODE_FRONTEND="no"
 			;;
-		fe)
-			MODE_TITLE="Разработка — только фронтенд (dev-fe)"
-			MODE_DESC="frontend с моком Telegram, ходит на реальный API"
-			MODE_PROFILES="dev-fe"
-			MODE_SERVICES="frontend-fe"
-			MODE_MOCK_TG="true"
-			MODE_API_URL=""
-			MODE_BACKEND="no"
-			MODE_FRONTEND="yes"
-			;;
 		full)
-			MODE_TITLE="Разработка — бэкенд + фронтенд (dev-full)"
-			MODE_DESC="postgres + backend + nginx + frontend с моком Telegram"
+			MODE_TITLE="Разработка — локальный API + фронтенд (full)"
+			MODE_DESC="локальный API + frontend с Telegram WebApp mock"
 			MODE_PROFILES="dev-full"
-			MODE_SERVICES="postgres backend-dev nginx-dev frontend-fe"
+			MODE_SERVICES="postgres-dev backend-dev frontend-full"
 			MODE_MOCK_TG="true"
-			MODE_API_URL=""
+			MODE_API_URL="http://localhost:8080"
 			MODE_BACKEND="yes"
 			MODE_FRONTEND="yes"
 			;;
@@ -145,8 +134,7 @@ select_mode_interactive() {
 			q|Q|й|Й) echo "Отменено."; exit 0 ;;
 			1) SELECTED_MODE="prod" ; return 0 ;;
 			2) SELECTED_MODE="dev"  ; return 0 ;;
-			3) SELECTED_MODE="fe"   ; return 0 ;;
-			4) SELECTED_MODE="full" ; return 0 ;;
+			3) SELECTED_MODE="full" ; return 0 ;;
 			*) echo "Некорректный ввод, попробуйте снова." >&2 ;;
 		esac
 	done
@@ -154,7 +142,7 @@ select_mode_interactive() {
 
 usage() {
 	print_menu
-	printf "Также можно указать режим аргументом: %s <prod|dev|fe|full>\n" "$0"
+	printf "Также можно указать режим аргументом: %s <prod|dev|full>\n" "$0"
 }
 
 # ---------------------------------------------------------------------------

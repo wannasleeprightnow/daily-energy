@@ -6,12 +6,14 @@ info:
   contact:
     name: Daily Energy Team
 servers:
-  - url: http://localhost/
+  - url: http://localhost:8080/
     description: Локальный сервер разработки
   - url: https://test-srvr.ru/
     description: Продакшн сервер
 
 tags:
+  - name: system
+    description: Служебные операции
   - name: users
     description: Операции с пользователями
   - name: plans
@@ -23,7 +25,64 @@ tags:
   - name: ai
     description: Взаимодействие с ИИ
 
+security:
+  - TelegramInitData: []
+
 paths:
+  /api/docs:
+    get:
+      summary: Открыть интерактивную документацию Swagger UI
+      tags: [ system ]
+      security: []
+      responses:
+        '200':
+          description: Swagger UI с документацией из openapi.yml
+          content:
+            text/html:
+              schema:
+                type: string
+  /api/openapi.yml:
+    get:
+      summary: Получить OpenAPI спецификацию
+      tags: [ system ]
+      security: []
+      responses:
+        '200':
+          description: OpenAPI документ в формате YAML
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /api/ping:
+    get:
+      summary: Проверить доступность API
+      tags: [ system ]
+      security: []
+      responses:
+        '200':
+          description: Сервер доступен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: pong
+  /api/ws/chat:
+    get:
+      summary: Подключиться к чату по WebSocket
+      description: После успешного HTTP Upgrade сервер принимает текстовые сообщения и отвечает текстовыми сообщениями. Клиент предлагает подпротокол daily-energy-chat; в production Telegram initData передаётся дополнительно в подпротоколе daily-energy-initdata.<base64url(initData)>.
+      tags: [ ai ]
+      responses:
+        '101':
+          description: WebSocket соединение установлено
+        '401':
+          description: Отсутствует или недействителен initData
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/users:
     post:
       summary: Создать нового пользователя
@@ -522,6 +581,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
+  securitySchemes:
+    TelegramInitData:
+      type: apiKey
+      in: header
+      name: initData
+      description: В локальных профилях Telegram auth mock назначает тестовый ID 777000; в production передавайте настоящее initData из Telegram.
   schemas:
     UserResponse:
       type: object
@@ -551,18 +616,15 @@ components:
     UserCreate:
       type: object
       required:
-        - utgid
-        - gender
         - date_of_birth
         - weight
         - height
-        - goal
-        - physical_activity
         - name
       properties:
         utgid:
           type: integer
           format: int64
+          description: При создании сервер берёт идентификатор из initData; значение из тела запроса игнорируется.
         gender:
           type: string
           enum: [ Male, Female ]
@@ -652,7 +714,7 @@ components:
           format: int64
         date:
           type: integer
-          format: i nt64
+          format: int64
         calories_to_consume:
           type: integer
         calories_to_burn:
@@ -713,8 +775,6 @@ components:
 
     CaloriesRequest:
       type: object
-      required:
-        - title
       properties:
         title:
           type: string
@@ -725,7 +785,9 @@ components:
         - calories
       properties:
         calories:
-          type: integer
+          oneOf:
+            - type: integer
+            - type: 'null'
 
     ErrorResponse:
       type: object

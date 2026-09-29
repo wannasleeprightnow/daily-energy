@@ -7,6 +7,17 @@ services:
     env_file:
       - path: .env
         required: true
+    environment:
+      DB_HOST: postgres-dev
+      DB_PORT: 5432
+      DB_USERNAME: daily_energy
+      DB_PASSWORD: daily_energy
+      DB_NAME: daily_energy
+      # Local-only Telegram auth mock for the Telegram WebApp mock user.
+      MOCK_TELEGRAM_AUTH: "true"
+      ALLOW_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
+    ports:
+      - 8080:8080
     restart: unless-stopped
     networks:
       - network
@@ -14,7 +25,8 @@ services:
       - dev
       - dev-full
     depends_on:
-      - postgres
+      postgres-dev:
+        condition: service_healthy
 
   nginx-dev:
     container_name: nginx-dev
@@ -37,8 +49,7 @@ services:
         required: true
         condition: service_started
     profiles:
-      - dev
-      - dev-full
+      - dev-proxy
 
   backend-prod:
     container_name: backend-prod
@@ -47,6 +58,8 @@ services:
     env_file:
       - path: .env
         required: true
+    environment:
+      MOCK_TELEGRAM_AUTH: "false"
     networks:
       - network
     profiles:
@@ -103,20 +116,42 @@ services:
     networks:
       - network
     profiles:
+      - prod
+
+  postgres-dev:
+    container_name: postgres-dev
+    image: postgres:17.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: daily_energy
+      POSTGRES_USER: daily_energy
+      POSTGRES_PASSWORD: daily_energy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daily_energy -d daily_energy"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    ports:
+      - 5432:5432
+    volumes:
+      - type: volume
+        source: postgres-dev-data
+        target: /var/lib/postgresql/data
+    networks:
+      - network
+    profiles:
       - dev
       - dev-full
-      - prod
   
-  # Vite dev-server with the Telegram mock enabled. Used by the frontend-only
-  # and full dev modes; hot-reloads from the mounted source tree.
-  frontend-fe:
-    container_name: frontend-fe
+  # Vite dev-server with the Telegram mock enabled for the full dev mode.
+  frontend-full:
+    container_name: frontend-full
     image: node:23-slim
     working_dir: /code
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
     environment:
       - VITE_MOCK_TELEGRAM=true
-      - VITE_API_URL=${VITE_API_URL}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
     env_file:
       - path: .env
         required: false
@@ -128,7 +163,6 @@ services:
     networks:
       - network
     profiles:
-      - dev-fe
       - dev-full
   
   # Production-style frontend image (static build behind nginx). Kept for the
@@ -149,7 +183,7 @@ services:
     depends_on:
       - backend-dev
     profiles:
-      - dev
+      - dev-static
   
   frontend-prod:
     container_name: frontend-prod
@@ -175,6 +209,9 @@ networks:
 volumes:
   postgres-data:
     name: postgres-data
+
+  postgres-dev-data:
+    name: postgres-dev-data
 
   # Keeps `node_modules` inside the container so the mounted host tree does not
   # shadow it (avoids ABI/OS mismatches between host and container).

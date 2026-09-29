@@ -13,7 +13,6 @@ import {
   ActionList,
   AiAdviceCard,
   CardLoading,
-  DEFAULT_ADVICE,
   ProgressRingBlock,
 } from "./PlanContent";
 import { AddEntrySheet } from "./AddEntrySheet";
@@ -60,14 +59,20 @@ export function DayContent({ utgid, mode }: DayContentProps) {
     range,
     activityType,
   );
-  const { data: plans } = usePlans(utgid, range, activityType);
+  const { data: plans, isLoading: plansLoading } = usePlans(
+    utgid,
+    range,
+    activityType,
+  );
 
-  const target =
-    plans?.[0]?.calories_to_consume ||
-    plans?.[0]?.calories_to_burn ||
-    1800;
+  const target = plans?.[0]
+    ? activityType === "Food"
+      ? plans[0].calories_to_consume
+      : plans[0].calories_to_burn
+    : null;
   const consumed = (actions || []).reduce((s, a) => s + a.calories, 0);
-  const remaining = Math.max(0, target - consumed);
+  const remaining = target === null ? null : Math.max(0, target - consumed);
+  const recommendation = plans?.[0]?.recommendation.trim();
 
   const title =
     mode === "today"
@@ -92,11 +97,13 @@ export function DayContent({ utgid, mode }: DayContentProps) {
       <div className="mt-5 flex flex-1 flex-col gap-4">
         <div className="rounded-card bg-[#272727] p-4">
           <div className="flex items-center gap-4">
-            <ProgressRingBlock remaining={remaining} />
+            <ProgressRingBlock
+              remaining={remaining}
+              target={target}
+              isLoading={plansLoading}
+            />
             <div className="flex-1">
-              <AiAdviceCard>
-                {DEFAULT_ADVICE[activityType]}
-              </AiAdviceCard>
+              {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
             </div>
           </div>
         </div>

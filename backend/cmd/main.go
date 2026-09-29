@@ -20,7 +20,9 @@ func main() {
 		log.Panicf("Failed to load config: %v", err)
 	}
 
-	go bot.RunBot(&c)
+	if c.TelegramBotToken != "" {
+		go bot.RunBot(&c)
+	}
 
 	if !c.Debug {
 		gin.SetMode(gin.ReleaseMode)

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -27,6 +26,10 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
+		// The browser requires the server to select one of the requested
+		// subprotocols. The auth payload protocol is read by middleware; this
+		// fixed protocol identifies the chat connection without echoing initData.
+		Subprotocols: []string{"daily-energy-chat"},
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -34,12 +37,10 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade to WebSocket: %v", err)
+		log.Printf("[chat/ws] handshake failed: %v", err)
 		return
 	}
 	defer conn.Close()
-
-	log.Println("New WebSocket connection established for chat")
 
 	conversationHistory := []ai.Message{
 		{Role: "system", Content: string(h.c.CaloriesAnalyzer)},
@@ -50,61 +51,64 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("Error reading message: %v", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+				log.Printf("[chat/ws] read failed: %v", err)
+			}
 			break
 		}
 
 		if messageType == websocket.TextMessage {
 			userMessage := string(p)
-			log.Printf("Received message: %s", userMessage)
 
 			conversationHistory = append(conversationHistory, ai.Message{Role: "user", Content: userMessage})
 
 			chatRequest := ai.ChatRequest{
-				Model:    "openrouter/cypher-alpha:free",
+				Model:    ai.ModelName,
 				Messages: conversationHistory,
 			}
 
 			jsonData, err := json.Marshal(chatRequest)
 			if err != nil {
-				log.Printf("Error marshaling chat request: %v", err)
+				log.Printf("[chat/ai] request marshal failed: model=%s err=%v", ai.ModelName, err)
 				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
 				continue
 			}
 
 			req, err := ai.GenerateRequest(h.c, jsonData)
 			if err != nil {
-				log.Printf("Error generating AI request: %v", err)
+				log.Printf("[chat/ai] request construction failed: model=%s err=%v", ai.ModelName, err)
 				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
 				continue
 			}
 
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Printf("Error sending AI request: %v", err)
+				log.Printf("[chat/ai] request failed: model=%s err=%v", ai.ModelName, err)
 				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
 				continue
 			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				log.Printf("AI request failed with status: %d", resp.StatusCode)
+			bodyBytes, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				log.Printf("[chat/ai] response body read failed: status=%d err=%v", resp.StatusCode, err)
+				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
+				continue
+			}
+			if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+				log.Printf("[chat/ai] provider returned error: status=%d", resp.StatusCode)
 				conn.WriteMessage(websocket.TextMessage, []byte("Error from AI service"))
 				continue
 			}
 
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				log.Printf("Error reading AI response: %v", err)
-				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
-				continue
-			}
-			fmt.Println(bodyBytes)
-
 			var apiResponse ai.APIResponse
 			err = ai.Deserialization(bodyBytes, &apiResponse)
 			if err != nil {
-				log.Printf("Error parsing AI response: %v", err)
+				log.Printf("[chat/ai] response parse failed: %v", err)
+				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
+				continue
+			}
+			if len(apiResponse.Choices) == 0 {
+				log.Printf("[chat/ai] response has no choices")
 				conn.WriteMessage(websocket.TextMessage, []byte("Error processing your request"))
 				continue
 			}
@@ -114,11 +118,9 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 
 			err = conn.WriteMessage(websocket.TextMessage, []byte(aiMessage))
 			if err != nil {
-				log.Printf("Error sending message: %v", err)
+				log.Printf("[chat/ws] response write failed: %v", err)
 				break
 			}
-			log.Printf("Sent response: %s", aiMessage)
 		}
 	}
-	log.Println("WebSocket connection closed")
 }
