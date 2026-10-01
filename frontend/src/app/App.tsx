@@ -37,7 +37,7 @@ function AppRoutes({ utgid }: { utgid: number }) {
 /**
  * Root component: resolves the onboarding / main decision.
  *  - No Telegram user  -> Greet page (landing).
- *  - User, no record   -> Onboarding wizard.
+ *  - User, no record   -> Greet page, then onboarding wizard.
  *  - User + record     -> Main app shell.
  */
 export default function App() {
@@ -93,7 +93,17 @@ function UserGate({ tgId, name }: { tgId: number; name?: string }) {
     );
   }
 
-  if (!user) return <OnboardingPage tgId={tgId} name={name} />;
+  if (!user) {
+    return (
+      <Routes>
+        <Route
+          path="/onboarding"
+          element={<OnboardingPage tgId={tgId} name={name} />}
+        />
+        <Route path="*" element={<GreetPage />} />
+      </Routes>
+    );
+  }
 
   return <AppRoutes utgid={tgId} />;
 }

@@ -4,7 +4,6 @@ import {
   getWeightHistory,
   getUser,
   isConflict,
-  isNotFound,
   updateUser,
 } from "@/api/users";
 import type { UserCreate, UserRequest, UserResponse } from "@/api/types";
@@ -16,18 +15,38 @@ export const queryKeys = {
 };
 
 /**
- * Reads the user for the current Telegram account. `undefined` in `user`
- * means "not created yet" (onboarding required).
+ * Reads the user for the current Telegram account. `null` in `user` means
+ * "not created yet" (onboarding required); `undefined` is reserved for the
+ * initial loading state managed by React Query.
  */
 export function useUser(utgid?: number) {
-  return useQuery<UserResponse | undefined, Error>({
+  return useQuery<UserResponse | null, Error>({
     queryKey: queryKeys.user(utgid ?? -1),
     enabled: !!utgid,
     queryFn: async () => {
       try {
         return await getUser(utgid as number);
       } catch (err) {
-        if (isNotFound(err)) return undefined;
+        const error = err as {
+          name?: unknown;
+          message?: unknown;
+          response?: { status?: unknown; data?: unknown; statusText?: unknown };
+        };
+        const responseBody = error?.response?.data;
+        const errorText = [
+          error?.message,
+          error?.response?.statusText,
+          typeof responseBody === "string"
+            ? responseBody
+            : JSON.stringify(responseBody ?? ""),
+        ]
+          .filter((part): part is string => typeof part === "string")
+          .join(" ")
+          .toLowerCase();
+
+        if (errorText.includes("record not found")) {
+          return null;
+        }
         throw err;
       }
     },
