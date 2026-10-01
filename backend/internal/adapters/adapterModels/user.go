@@ -13,7 +13,7 @@ type User struct {
 	Height            int                     `gorm:"column:height"`
 	Goal              models.Goal             `gorm:"column:goal"`
 	PhysicalActivity  models.PhysicalActivity `gorm:"column:physical_activity"`
-	Actions           []Action                `gorm:"foreignKey:Utgid;references:Utgid"`
-	Plans             []Plan                  `gorm:"foreignKey:Utgid;references:Utgid"`
-	UserWeightHistory []UserWeightHistory     `gorm:"foreignKey:Utgid;references:Utgid"`
+	Actions           []Action                `gorm:"foreignKey:Utgid;references:Utgid;constraint:OnDelete:CASCADE"`
+	Plans             []Plan                  `gorm:"foreignKey:Utgid;references:Utgid;constraint:OnDelete:CASCADE"`
+	UserWeightHistory []UserWeightHistory     `gorm:"foreignKey:Utgid;references:Utgid;constraint:OnDelete:CASCADE"`
 }
