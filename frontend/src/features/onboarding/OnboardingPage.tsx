@@ -88,10 +88,8 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           total={TOTAL_STEPS}
           selected={draft.gender}
           onBack={goBack}
-          onNext={(v) => {
-            actions.setGender(v);
-            goNext();
-          }}
+          onChange={actions.setGender}
+          onNext={goNext}
         />
       )}
       {step === 2 && (
@@ -130,10 +128,8 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           total={TOTAL_STEPS}
           selected={draft.goal}
           onBack={goBack}
-          onNext={(v) => {
-            actions.setGoal(v);
-            goNext();
-          }}
+          onChange={actions.setGoal}
+          onNext={goNext}
         />
       )}
       {step === 6 && (
@@ -142,8 +138,8 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           total={TOTAL_STEPS}
           selected={draft.physicalActivity}
           onBack={goBack}
-          onNext={(v) => {
-            actions.setPhysicalActivity(v);
+          onChange={actions.setPhysicalActivity}
+          onNext={() => {
             if (isLast) submit();
           }}
         />

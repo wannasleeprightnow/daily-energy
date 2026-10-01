@@ -7,8 +7,8 @@ import (
 
 type UserWeightHistoryCreate struct {
 	Date   int64 `json:"date" validate:"required"`
-	Weight int   `json:"weight" validate:"required,min=10,max=300"`
-	Height int   `json:"height" validate:"required,min=10,max=300"`
+	Weight int   `json:"weight" validate:"required,min=30,max=300"`
+	Height int   `json:"height" validate:"required,min=100,max=250"`
 }
 
 func (uw *UserWeightHistoryCreate) ToUserWeightHistory(utgid int64) models.UserWeightHistory {

@@ -26,6 +26,6 @@ export const APP_VERSION = "2.0.0";
 
 /** Hard caps for onboarding numeric fields (Figma/API constraints). */
 export const LIMITS = {
-  weight: { min: 25, max: 250 },
-  height: { min: 90, max: 250 },
+  weight: { min: 30, max: 300 },
+  height: { min: 100, max: 250 },
 } as const;

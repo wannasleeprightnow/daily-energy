@@ -39,8 +39,9 @@ body {
 
 /* Reusable layout shell for a phone-sized column (max-w 430px). */
 .app-root {
-  width: 100%;
+  width: min(100vw, 430px);
   max-width: 430px;
+  flex: 0 0 min(100vw, 430px);
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;

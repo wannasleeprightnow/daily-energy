@@ -9,7 +9,8 @@ import type { PhysicalActivity } from "@/api/types";
 
 interface ActivityStepProps {
   selected: PhysicalActivity | null;
-  onNext: (v: PhysicalActivity) => void;
+  onChange: (v: PhysicalActivity) => void;
+  onNext: () => void;
   onBack: () => void;
   step: number;
   total: number;
@@ -46,6 +47,7 @@ const OPTIONS: Option[] = [
 /** "Ваш уровень физ. активности" — Figma `78:145`. */
 export function ActivityStep({
   selected,
+  onChange,
   onNext,
   onBack,
   step,
@@ -58,7 +60,7 @@ export function ActivityStep({
       title="Ваш уровень физ. активности"
       showBack
       onBack={onBack}
-      onNext={() => selected && onNext(selected)}
+      onNext={onNext}
       canContinue={!!selected}
     >
       {OPTIONS.map((o) => {
@@ -67,7 +69,7 @@ export function ActivityStep({
           <OptionButton
             key={o.value}
             selected={active}
-            onClick={() => onNext(o.value)}
+            onClick={() => onChange(o.value)}
             className="min-h-[76px]"
           >
             <span

@@ -4,7 +4,8 @@ import type { Goal } from "@/api/types";
 
 interface GoalStepProps {
   selected: Goal | null;
-  onNext: (v: Goal) => void;
+  onChange: (v: Goal) => void;
+  onNext: () => void;
   onBack: () => void;
   step: number;
   total: number;
@@ -26,6 +27,7 @@ const GOALS: GoalOption[] = [
 /** "Какая у вас цель?" — Figma `68:24`. */
 export function GoalStep({
   selected,
+  onChange,
   onNext,
   onBack,
   step,
@@ -38,14 +40,14 @@ export function GoalStep({
       title="Какая у вас цель?"
       showBack
       onBack={onBack}
-      onNext={() => selected && onNext(selected)}
+      onNext={onNext}
       canContinue={!!selected}
     >
       {GOALS.map((g) => (
         <OptionButton
           key={g.value}
           selected={selected === g.value}
-          onClick={() => onNext(g.value)}
+          onClick={() => onChange(g.value)}
           className="justify-between"
         >
           <span>{g.label}</span>

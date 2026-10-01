@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { LIMITS } from "@/constants";
 import type {
   Gender,
   Goal,
@@ -27,13 +28,17 @@ export interface OnboardingActions {
 }
 
 export function emptyDraft(): ProfileDraft {
+  const birthday = new Date();
+  birthday.setFullYear(birthday.getFullYear() - 20);
+  birthday.setHours(0, 0, 0, 0);
+
   return {
     name: "",
     gender: null,
     goal: null,
-    weight: null,
-    height: null,
-    dateOfBirth: null,
+    weight: 70,
+    height: 170,
+    dateOfBirth: birthday,
     physicalActivity: null,
   };
 }
@@ -52,11 +57,13 @@ export function draftToProfile(
 } | null {
   if (
     !d.name.trim() ||
+    d.name.trim().length > 50 ||
     !d.gender ||
     !d.goal ||
-    d.weight === null ||
-    d.height === null ||
-    !d.dateOfBirth ||
+    d.weight === null || d.weight < LIMITS.weight.min || d.weight > LIMITS.weight.max ||
+    d.height === null || d.height < LIMITS.height.min || d.height > LIMITS.height.max ||
+    !d.dateOfBirth || !Number.isFinite(d.dateOfBirth.getTime()) ||
+    Math.floor(d.dateOfBirth.getTime() / 1000) <= 0 ||
     !d.physicalActivity
   ) {
     return null;

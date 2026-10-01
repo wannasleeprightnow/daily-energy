@@ -602,8 +602,12 @@ components:
           format: int64
         weight:
           type: integer
+          minimum: 30
+          maximum: 300
         height:
           type: integer
+          minimum: 100
+          maximum: 250
         goal:
           type: string
           enum: [ LoseWeight, Maintain, GainMuscleMass ]
@@ -633,8 +637,12 @@ components:
           format: int64
         weight:
           type: integer
+          minimum: 30
+          maximum: 300
         height:
           type: integer
+          minimum: 100
+          maximum: 250
         goal:
           type: string
           enum: [ LoseWeight, Maintain, GainMuscleMass ]
@@ -657,8 +665,12 @@ components:
       properties:
         weight:
           type: integer
+          minimum: 30
+          maximum: 300
         height:
           type: integer
+          minimum: 100
+          maximum: 250
         gender:
           type: string
           enum: [ Male, Female ]
@@ -685,8 +697,12 @@ components:
           format: int64
         weight:
           type: integer
+          minimum: 30
+          maximum: 300
         height:
           type: integer
+          minimum: 100
+          maximum: 250
 
     UserWeightHistoryRequest:
       type: object
@@ -700,8 +716,12 @@ components:
           format: int64
         weight:
           type: integer
+          minimum: 30
+          maximum: 300
         height:
           type: integer
+          minimum: 100
+          maximum: 250
 
     PlanResponse:
       type: object

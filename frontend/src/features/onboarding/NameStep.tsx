@@ -18,8 +18,8 @@ export function NameStep({
   total,
   initialName = "",
 }: NameStepProps) {
-  const [name, setName] = useState(initialName);
-  const canContinue = name.trim().length > 0;
+  const [name, setName] = useState(initialName.slice(0, 50));
+  const canContinue = name.trim().length > 0 && name.trim().length <= 50;
 
   return (
     <OnboardingLayout
@@ -35,7 +35,7 @@ export function NameStep({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Имя"
-        maxLength={40}
+        maxLength={50}
         autoFocus
       />
     </OnboardingLayout>
