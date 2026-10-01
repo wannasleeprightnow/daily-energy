@@ -108,6 +108,40 @@ export function MessagesIcon({ size, ...props }: IconProps) {
   );
 }
 
+/** Supplied Figma chat icon used in the bottom navigation. */
+export function ChatTabIcon({ size = 33, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 33 33" fill="none" {...base(size, props)}>
+      <path
+        d="M32 32V9.5H8.25V24.5H23.25L32 32Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.25 14.5L0.75 22V0.75H25.75V8.25"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Supplied Figma profile icon used in the bottom navigation. */
+export function ProfileTabIcon({ size = 27, ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 27 27" {...base(size, props)}>
+      <path
+        d="M13.3333 0C15.1014 0 16.7971 0.702379 18.0474 1.95262C19.2976 3.20286 20 4.89856 20 6.66667C20 8.43478 19.2976 10.1305 18.0474 11.3807C16.7971 12.631 15.1014 13.3333 13.3333 13.3333C11.5652 13.3333 9.86953 12.631 8.61929 11.3807C7.36905 10.1305 6.66667 8.43478 6.66667 6.66667C6.66667 4.89856 7.36905 3.20286 8.61929 1.95262C9.86953 0.702379 11.5652 0 13.3333 0ZM13.3333 16.6667C20.7 16.6667 26.6667 19.65 26.6667 23.3333V26.6667H0V23.3333C0 19.65 5.96667 16.6667 13.3333 16.6667Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 /** Figma "Pencil" — the edit button in profile (24×24, #ff7700). */
 export function PencilIcon({ size, ...props }: IconProps) {
   return (

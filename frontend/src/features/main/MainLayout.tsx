@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AppShell, NavItem, TabBar } from "@/ui";
+import { formatDateWithMonth } from "@/lib/dates";
 import {
-  AccountIcon,
   CalendarIcon,
   ForkKnifeIcon,
-  MessagesIcon,
+  ChatTabIcon,
+  ProfileTabIcon,
 } from "@/ui/icons";
 
 interface MainLayoutProps {
@@ -23,6 +24,8 @@ export function MainLayout(_props: MainLayoutProps) {
 
   const chatActive = pathname.startsWith("/chat");
   const profileActive = pathname.startsWith("/profile");
+  const dateActive = !chatActive && !profileActive;
+  const [date, month] = formatDateWithMonth().split(" ");
 
   return (
     <AppShell className="pb-20">
@@ -34,26 +37,29 @@ export function MainLayout(_props: MainLayoutProps) {
             type="button"
             aria-label="Календарь"
             onClick={() => navigate("/calendar")}
-            className="flex h-11 w-11 items-center justify-center text-on"
+            aria-current={dateActive ? "page" : undefined}
+            className="flex min-h-11 min-w-[60px] flex-col items-center justify-center text-[18px] font-medium leading-5"
+            style={{ color: dateActive ? "#ffffff" : "#666666" }}
           >
-            <CalendarIcon size={26} color="currentColor" />
+            <span>{date}</span>
+            <span>{month}</span>
           </button>
         }
+        center={
+          <NavItem
+            label="Чат"
+            icon={<ChatTabIcon />}
+            active={chatActive}
+            onClick={() => navigate("/chat")}
+          />
+        }
         right={
-          <div className="flex items-center gap-5">
-            <NavItem
-              label="Чат"
-              icon={<MessagesIcon size={26} />}
-              active={chatActive}
-              onClick={() => navigate("/chat")}
-            />
-            <NavItem
-              label="Профиль"
-              icon={<AccountIcon size={26} />}
-              active={profileActive}
-              onClick={() => navigate("/profile")}
-            />
-          </div>
+          <NavItem
+            label="Профиль"
+            icon={<ProfileTabIcon />}
+            active={profileActive}
+            onClick={() => navigate("/profile")}
+          />
         }
       />
     </AppShell>
