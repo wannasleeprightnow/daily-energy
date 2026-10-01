@@ -104,10 +104,12 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
                 className="flex h-11 items-center justify-center"
               >
                 <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-[12px] ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-medium tabular-nums ${
                     isSelected ? "bg-[#f08629] text-on" : "bg-[#383838] text-on/70"
                   }`}
-                />
+                >
+                  {cell.getDate()}
+                </span>
               </button>
             );
           })}
