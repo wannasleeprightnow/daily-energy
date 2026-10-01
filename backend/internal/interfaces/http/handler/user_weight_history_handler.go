@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -77,9 +76,12 @@ func (h *UserWeightHistoryHandler) GetUserWeightHistory(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(userWeightHistory)
+	response := make([]dto.UserWeightHistoryResponse, len(userWeightHistory))
+	for i, entry := range userWeightHistory {
+		response[i] = dto.ToUserWeightHistoryResponse(entry)
+	}
 
-	c.JSON(http.StatusOK, userWeightHistory)
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *UserWeightHistoryHandler) CreateUserWeightHistory(c *gin.Context) {
