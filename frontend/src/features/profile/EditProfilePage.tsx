@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Goal, PhysicalActivity } from "@/api/types";
 import { AppShell, GhostButton, Spinner, Text } from "@/ui";
@@ -41,7 +41,7 @@ const ACTIVITIES: PhysicalActivity[] = ["Low", "Medium", "High"];
  * Card 320×673 r15 `#272727`; each row is a label (fs22/w500) with a value in
  * a black input (r17 `#000`). Values cycle with the ArrowLeft / ArrowRight
  * controls (27×27, white); the Check button (27×27, `#ff7700`) saves via
- * `PUT /api/users/{utgid}`.
+ * `PUT /api/users/{utgid}` and records changed measurements in weight history.
  */
 export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const navigate = useNavigate();
@@ -49,6 +49,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const updateUser = useUpdateUser(utgid);
 
   const [draft, setDraft] = useState<Draft | null>(null);
+  const originalMeasurements = useRef<Pick<Draft, "weight" | "height"> | null>(null);
 
   // Seed the local draft once the user record arrives.
   const current = useMemo<Draft | null>(() => {
@@ -63,6 +64,12 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
       physical_activity: user.physical_activity,
     };
   }, [draft, user]);
+
+  useEffect(() => {
+    if (user && !originalMeasurements.current) {
+      originalMeasurements.current = { weight: user.weight, height: user.height };
+    }
+  }, [user]);
 
   if (isLoading || !current) {
     return (
@@ -88,13 +95,19 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const save = () => {
     updateUser.mutate(
       {
-        name: current.name,
-        gender: user!.gender,
-        date_of_birth: current.date_of_birth,
-        weight: current.weight,
-        height: current.height,
-        goal: current.goal,
-        physical_activity: current.physical_activity,
+        patch: {
+          name: current.name,
+          gender: user!.gender,
+          date_of_birth: current.date_of_birth,
+          weight: current.weight,
+          height: current.height,
+          goal: current.goal,
+          physical_activity: current.physical_activity,
+        },
+        previousMeasurements: originalMeasurements.current ?? {
+          weight: user!.weight,
+          height: user!.height,
+        },
       },
       {
         onSuccess: () => {

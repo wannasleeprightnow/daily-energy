@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  addWeightEntry,
   createUser,
   getWeightHistory,
   getUser,
@@ -58,7 +59,10 @@ export function useWeightHistory(utgid?: number) {
   return useQuery({
     queryKey: queryKeys.weightHistory(utgid ?? -1),
     enabled: !!utgid,
-    queryFn: () => getWeightHistory(utgid as number),
+    queryFn: async () => {
+      const history = (await getWeightHistory(utgid as number)) ?? [];
+      return history.sort((a, b) => a.date - b.date);
+    },
   });
 }
 
@@ -83,8 +87,49 @@ export function useCreateUser() {
 export function useUpdateUser(utgid: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (patch: UserRequest) => updateUser(utgid, patch),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.user(utgid) }),
+    mutationFn: async ({
+      patch,
+      previousMeasurements,
+    }: {
+      patch: UserRequest;
+      previousMeasurements: Pick<UserRequest, "weight" | "height">;
+    }) => {
+      const measurementsChanged =
+        patch.weight !== previousMeasurements.weight ||
+        patch.height !== previousMeasurements.height;
+
+      if (!measurementsChanged) return updateUser(utgid, patch);
+
+      // Read history before writing so retries after a partial failure can
+      // avoid duplicate snapshots and complete a missing final snapshot.
+      const history = (await getWeightHistory(utgid)) ?? [];
+      const latest = [...history].sort((a, b) => a.date - b.date).at(-1);
+      const snapshotDate = Math.floor(Date.now() / 1000);
+
+      if (history.length === 0) {
+        await addWeightEntry(utgid, {
+          date: Math.max(1, snapshotDate - 1),
+          weight: previousMeasurements.weight,
+          height: previousMeasurements.height,
+        });
+      }
+
+      const updatedUser = await updateUser(utgid, patch);
+      if (latest?.weight !== patch.weight || latest?.height !== patch.height) {
+        const lastRecordedDate = latest?.date ?? snapshotDate - 1;
+        await addWeightEntry(utgid, {
+          date: Math.max(Math.floor(Date.now() / 1000), lastRecordedDate + 1),
+          weight: patch.weight,
+          height: patch.height,
+        });
+      }
+
+      return updatedUser;
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.user(utgid) });
+      void qc.invalidateQueries({ queryKey: queryKeys.weightHistory(utgid) });
+    },
   });
 }
 
