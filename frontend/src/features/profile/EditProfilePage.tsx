@@ -1,27 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Goal, PhysicalActivity } from "@/api/types";
-import { AppShell, GhostButton, Spinner, Text } from "@/ui";
+import { AppShell, GhostButton, Input, OptionButton, Spinner, Text, WheelColumn } from "@/ui";
 import { ArrowLeftIcon, CheckIcon } from "@/ui/icons";
 import { useUpdateUser, useUser } from "@/hooks/useUser";
 import { apiErrorMessage } from "@/api/client";
-import { formatFullDate } from "@/lib/dates";
+import { MONTHS_RU, LIMITS } from "@/constants";
 import { haptic } from "@/lib/telegram";
-import { LIMITS } from "@/constants";
-import { ACTIVITY_LABEL, GOAL_LABEL } from "./labels";
 
 interface EditProfilePageProps {
   utgid: number;
 }
-
-/** Editable field keys, in the order shown on the Figma card (`150:360`). */
-type FieldKey =
-  | "name"
-  | "date_of_birth"
-  | "goal"
-  | "height"
-  | "weight"
-  | "physical_activity";
 
 interface Draft {
   name: string;
@@ -32,26 +21,35 @@ interface Draft {
   physical_activity: PhysicalActivity;
 }
 
-const GOALS: Goal[] = ["LoseWeight", "Maintain", "GainMuscleMass"];
-const ACTIVITIES: PhysicalActivity[] = ["Low", "Medium", "High"];
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const HEIGHTS = Array.from(
+  { length: LIMITS.height.max - LIMITS.height.min + 1 },
+  (_, i) => LIMITS.height.min + i,
+);
+const WEIGHTS = Array.from(
+  { length: LIMITS.weight.max - LIMITS.weight.min + 1 },
+  (_, i) => LIMITS.weight.min + i,
+);
 
-/**
- * "Профиль изменить" screen (Figma `150:360`).
- *
- * Card 320×673 r15 `#272727`; each row is a label (fs22/w500) with a value in
- * a black input (r17 `#000`). Values cycle with the ArrowLeft / ArrowRight
- * controls (27×27, white); the Check button (27×27, `#ff7700`) saves via
- * `PUT /api/users/{utgid}` and records changed measurements in weight history.
- */
+const ACTIVITY_OPTIONS: { value: PhysicalActivity; title: string; subtitle: string }[] = [
+  { value: "Low", title: "Низкая", subtitle: "Сидячий образ жизни" },
+  { value: "Medium", title: "Умеренная", subtitle: "Тренировки 2–4 раза в неделю" },
+  { value: "High", title: "Интенсивная", subtitle: "Тренировки 5–7 раз в неделю" },
+];
+
+const GOAL_OPTIONS: { value: Goal; label: string; emoji: string }[] = [
+  { value: "LoseWeight", label: "Похудеть", emoji: "📉" },
+  { value: "Maintain", label: "Поддерживать вес", emoji: "😊" },
+  { value: "GainMuscleMass", label: "Набрать вес", emoji: "💪" },
+];
+
 export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const navigate = useNavigate();
   const { data: user, isLoading } = useUser(utgid);
   const updateUser = useUpdateUser(utgid);
-
   const [draft, setDraft] = useState<Draft | null>(null);
   const originalMeasurements = useRef<Pick<Draft, "weight" | "height"> | null>(null);
 
-  // Seed the local draft once the user record arrives.
   const current = useMemo<Draft | null>(() => {
     if (draft) return draft;
     if (!user) return null;
@@ -71,7 +69,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
     }
   }, [user]);
 
-  if (isLoading || !current) {
+  if (isLoading || !current || !user) {
     return (
       <AppShell className="items-center justify-center" aria-live="polite">
         <Spinner size={40} />
@@ -79,25 +77,22 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
     );
   }
 
-  const patch = (next: Partial<Draft>) => {
-    setDraft({ ...current, ...next });
+  const patch = (next: Partial<Draft>) => setDraft({ ...current, ...next });
+  const birthday = new Date(current.date_of_birth * 1000);
+  const day = birthday.getDate();
+  const month = birthday.getMonth();
+  const year = birthday.getFullYear();
+  const updateBirthday = (d: number, m: number, y: number) => {
+    const date = new Date(y, m, Math.min(d, daysInMonth(y, m)));
+    patch({ date_of_birth: Math.floor(date.getTime() / 1000) });
   };
-
-  const cycle = <T,>(values: readonly T[], value: T, dir: 1 | -1): T => {
-    const idx = Math.max(0, values.indexOf(value));
-    const next = (idx + dir + values.length) % values.length;
-    return values[next];
-  };
-
-  const clamp = (value: number, min: number, max: number) =>
-    Math.max(min, Math.min(max, value));
 
   const save = () => {
     updateUser.mutate(
       {
         patch: {
           name: current.name,
-          gender: user!.gender,
+          gender: user.gender,
           date_of_birth: current.date_of_birth,
           weight: current.weight,
           height: current.height,
@@ -105,8 +100,8 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
           physical_activity: current.physical_activity,
         },
         previousMeasurements: originalMeasurements.current ?? {
-          weight: user!.weight,
-          height: user!.height,
+          weight: user.weight,
+          height: user.height,
         },
       },
       {
@@ -119,120 +114,123 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
     );
   };
 
-  const fields: {
-    key: FieldKey;
-    label: string;
-    value: string;
-    onPrev: () => void;
-    onNext: () => void;
-  }[] = [
-    {
-      key: "name",
-      label: "Имя",
-      value: current.name,
-      onPrev: () => patch({ name: current.name }),
-      onNext: () => patch({ name: current.name }),
-    },
-    {
-      key: "date_of_birth",
-      label: "Дата рождения",
-      value: formatFullDate(current.date_of_birth),
-      onPrev: () => patch({ date_of_birth: shiftDays(current.date_of_birth, -1) }),
-      onNext: () => patch({ date_of_birth: shiftDays(current.date_of_birth, 1) }),
-    },
-    {
-      key: "goal",
-      label: "Цель",
-      value: GOAL_LABEL[current.goal],
-      onPrev: () => patch({ goal: cycle(GOALS, current.goal, -1) }),
-      onNext: () => patch({ goal: cycle(GOALS, current.goal, 1) }),
-    },
-    {
-      key: "height",
-      label: "Рост",
-      value: `${current.height} см`,
-      onPrev: () =>
-        patch({ height: clamp(current.height - 1, LIMITS.height.min, LIMITS.height.max) }),
-      onNext: () =>
-        patch({ height: clamp(current.height + 1, LIMITS.height.min, LIMITS.height.max) }),
-    },
-    {
-      key: "weight",
-      label: "Вес",
-      value: `${current.weight} кг`,
-      onPrev: () =>
-        patch({ weight: clamp(current.weight - 1, LIMITS.weight.min, LIMITS.weight.max) }),
-      onNext: () =>
-        patch({ weight: clamp(current.weight + 1, LIMITS.weight.min, LIMITS.weight.max) }),
-    },
-    {
-      key: "physical_activity",
-      label: "Ур. физ. активности",
-      value: ACTIVITY_LABEL[current.physical_activity],
-      onPrev: () =>
-        patch({ physical_activity: cycle(ACTIVITIES, current.physical_activity, -1) }),
-      onNext: () =>
-        patch({ physical_activity: cycle(ACTIVITIES, current.physical_activity, 1) }),
-    },
-  ];
+  const labelClass = "mb-3 block text-[20px] font-medium text-on";
 
   return (
     <AppShell className="flex flex-col px-5 pb-24 pt-6">
       <div className="mb-4 flex items-center justify-between">
-        <GhostButton
-          onClick={() => navigate(-1)}
-          aria-label="Назад"
-          className="-ml-2 text-on"
-        >
+        <GhostButton onClick={() => navigate(-1)} aria-label="Назад" className="-ml-2 text-on">
           <ArrowLeftIcon size={27} />
         </GhostButton>
-
         <GhostButton
           onClick={save}
           aria-label="Сохранить"
           disabled={updateUser.isPending}
           className="text-[#ff7700]"
         >
-          {updateUser.isPending ? (
-            <Spinner size={22} />
-          ) : (
-            <CheckIcon size={27} />
-          )}
+          {updateUser.isPending ? <Spinner size={22} /> : <CheckIcon size={27} />}
         </GhostButton>
       </div>
 
-      <div className="flex flex-col items-center">
-        <div className="w-full max-w-[320px] rounded-card bg-[#272727] px-4 py-5">
-          {fields.map((f) => (
-            <div key={f.key} className="flex items-center gap-3 py-3">
-              <span className="w-[110px] shrink-0 text-[22px] font-medium leading-[28px] text-on">
-                {f.label}
-              </span>
+      <div className="mx-auto flex w-full max-w-[430px] flex-col gap-7 px-1 pb-8">
+          <label className="block">
+            <span className={labelClass}>Имя</span>
+            <Input
+              value={current.name}
+              onChange={(event) => patch({ name: event.target.value })}
+              aria-label="Имя"
+              autoComplete="name"
+              maxLength={50}
+            />
+          </label>
 
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <GhostButton
-                  onClick={f.onPrev}
-                  aria-label={`${f.label}: предыдущее`}
-                  className="h-11 w-11 shrink-0 text-on"
-                >
-                  <ArrowLeftIcon size={27} />
-                </GhostButton>
+          <section aria-label="Рост">
+            <h2 className={labelClass}>Рост</h2>
+            <MeasurementPicker
+              value={current.height}
+              unit="см"
+              values={HEIGHTS}
+              onChange={(height) => patch({ height })}
+            />
+          </section>
 
-                <span className="flex min-h-[44px] min-w-0 flex-1 items-center justify-center rounded-[17px] bg-black px-3 text-[16px] font-light text-on">
-                  <span className="truncate">{f.value}</span>
-                </span>
+          <section aria-label="Вес">
+            <h2 className={labelClass}>Вес</h2>
+            <MeasurementPicker
+              value={current.weight}
+              unit="кг"
+              values={WEIGHTS}
+              onChange={(weight) => patch({ weight })}
+            />
+          </section>
 
-                <GhostButton
-                  onClick={f.onNext}
-                  aria-label={`${f.label}: следующее`}
-                  className="h-11 w-11 shrink-0 text-on"
-                >
-                  <ArrowRight />
-                </GhostButton>
-              </div>
+          <section aria-label="Дата рождения">
+            <h2 className={labelClass}>Дата рождения</h2>
+            <div className="flex w-full justify-between gap-1 overflow-hidden rounded-card bg-surface px-2 py-4">
+              <WheelColumn
+                ariaLabel="День рождения"
+                label="День"
+                values={DAYS}
+                selected={day}
+                onSelect={(value) => updateBirthday(value, month, year)}
+                viewportClassName="w-full"
+                valueClassName="text-[22px]"
+              />
+              <WheelColumn
+                ariaLabel="Месяц рождения"
+                label="Месяц"
+                values={MONTHS_RU}
+                selected={MONTHS_RU[month]}
+                onSelect={(value) => updateBirthday(day, MONTHS_RU.indexOf(value), year)}
+                viewportClassName="w-full"
+                valueClassName="truncate text-[clamp(15px,4.8vw,22px)]"
+              />
+              <WheelColumn
+                ariaLabel="Год рождения"
+                label="Год"
+                values={Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i)}
+                selected={year}
+                onSelect={(value) => updateBirthday(day, month, value)}
+                viewportClassName="w-full"
+                valueClassName="text-[22px]"
+              />
             </div>
-          ))}
-        </div>
+          </section>
+
+          <section aria-label="Цель">
+            <h2 className={labelClass}>Цель</h2>
+            <div className="flex flex-col gap-3">
+              {GOAL_OPTIONS.map((goal) => (
+                <OptionButton
+                  key={goal.value}
+                  selected={current.goal === goal.value}
+                  onClick={() => patch({ goal: goal.value })}
+                  className="min-h-[64px] justify-between"
+                >
+                  <span>{goal.label}</span><span aria-hidden>{goal.emoji}</span>
+                </OptionButton>
+              ))}
+            </div>
+          </section>
+
+          <section aria-label="Уровень физической активности">
+            <h2 className={labelClass}>Уровень физической активности</h2>
+            <div className="flex flex-col gap-3">
+              {ACTIVITY_OPTIONS.map((activity) => (
+                <OptionButton
+                  key={activity.value}
+                  selected={current.physical_activity === activity.value}
+                  onClick={() => patch({ physical_activity: activity.value })}
+                  className="min-h-[76px]"
+                >
+                  <span className="flex flex-col gap-1">
+                    <span className="text-[20px] font-medium">{activity.title}</span>
+                    <span className="text-[15px] text-on/70">{activity.subtitle}</span>
+                  </span>
+                </OptionButton>
+              ))}
+            </div>
+          </section>
 
         {updateUser.isError && (
           <Text kind="small" className="mt-4 text-center text-danger">
@@ -244,18 +242,31 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   );
 }
 
-/** Mirror of ArrowLeftIcon for the "next" control (Figma uses a rotated arrow). */
-function ArrowRight() {
+function MeasurementPicker({
+  value,
+  unit,
+  values,
+  onChange,
+}: {
+  value: number;
+  unit: string;
+  values: number[];
+  onChange: (value: number) => void;
+}) {
   return (
-    <span className="inline-flex rotate-180">
-      <ArrowLeftIcon size={27} />
-    </span>
+    <div className="flex min-h-[150px] justify-center rounded-card bg-surface px-4 py-3">
+      <WheelColumn
+        ariaLabel={unit === "см" ? "Рост в сантиметрах" : "Вес в килограммах"}
+        label={unit}
+        values={values}
+        selected={value}
+        onSelect={onChange}
+        viewportClassName="w-[110px]"
+      />
+    </div>
   );
 }
 
-/** Shift a unix-seconds timestamp by whole days. */
-function shiftDays(timestampSeconds: number, days: number): number {
-  const d = new Date(timestampSeconds * 1000);
-  d.setDate(d.getDate() + days);
-  return Math.floor(d.getTime() / 1000);
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
 }

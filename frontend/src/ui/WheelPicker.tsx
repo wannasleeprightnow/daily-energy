@@ -13,6 +13,9 @@ interface WheelColumnProps<T> extends ColumnConfig<T> {
   selected: T;
   onSelect: (value: T) => void;
   ariaLabel: string;
+  /** Override the picker viewport width for responsive multi-column layouts. */
+  viewportClassName?: string;
+  valueClassName?: string;
 }
 
 /**
@@ -26,6 +29,8 @@ export function WheelColumn<T extends string | number>({
   unit,
   label,
   ariaLabel,
+  viewportClassName,
+  valueClassName,
 }: WheelColumnProps<T>) {
   const selectedIndex = Math.max(
     0,
@@ -96,12 +101,14 @@ export function WheelColumn<T extends string | number>({
           onSelect(value);
           scrollToIndex(index);
         }}
-        className="flex h-[35px] cursor-pointer items-center justify-center"
+        className="flex h-[35px] w-full min-w-0 cursor-pointer items-center justify-center"
         style={{ opacity, transform: `scale(${scale})`, transition: "opacity 0.15s ease, transform 0.15s ease" }}
       >
         <span
           className={clsx(
             "text-h3 text-on tabular-nums",
+            "block max-w-full truncate",
+            valueClassName,
             distance === 0 && "font-medium",
           )}
         >
@@ -114,7 +121,7 @@ export function WheelColumn<T extends string | number>({
 
   return (
     <div
-      className="flex flex-col items-center"
+      className="flex min-w-0 flex-1 flex-col items-center"
       aria-label={ariaLabel}
     >
       {label && (
@@ -124,7 +131,7 @@ export function WheelColumn<T extends string | number>({
         ref={viewportRef}
         role="listbox"
         aria-activedescendant={`wheel-${ariaLabel}-${clampedIndex}`}
-        className="relative h-[105px] w-[110px] select-none overflow-hidden"
+        className={clsx("relative h-[105px] w-[110px] select-none overflow-hidden", viewportClassName)}
         style={{ touchAction: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
