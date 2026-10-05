@@ -33,8 +33,8 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
   return (
     <AppShell className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
       {planError && (
-        <div className="mx-5 mt-4 min-w-0 max-w-full rounded-card bg-[#272727] p-4 text-on" role="alert">
-          <p className="break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
+        <div className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg" role="alert">
+          <p className="min-w-0 break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
             Не удалось подготовить план. {apiErrorMessage(planError)}
           </p>
           <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
