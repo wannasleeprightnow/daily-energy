@@ -135,9 +135,8 @@ export function DayContent({ utgid, mode }: DayContentProps) {
                   remaining={remaining}
                   target={target}
                   isLoading={false}
-                  size={isActivity ? 150 : 126}
+                  size={150}
                   showConsumedProgress
-                  mutedProgress={!isActivity}
                 />
               </div>
               {recommendation && (
