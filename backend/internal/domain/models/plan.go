@@ -8,4 +8,5 @@ type Plan struct {
 	CaloriesToBurn    int
 	Recommendation    string
 	Type              ActionType
+	ProfileHash       string
 }

@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { ActionType } from "@/api/types";
 import { useActions } from "@/hooks/useActions";
-import { usePlans } from "@/hooks/usePlans";
+import { useIsEnsuringPlan, useIsRefreshingFuturePlan, usePlans } from "@/hooks/usePlans";
+import { useUser } from "@/hooks/useUser";
 import {
   dayRange,
   formatDateWithMonth,
@@ -13,6 +14,7 @@ import {
   ActionList,
   AiAdviceCard,
   CardLoading,
+  PlanLoading,
   ProgressRingBlock,
 } from "./PlanContent";
 import { AddEntrySheet } from "./AddEntrySheet";
@@ -64,6 +66,19 @@ export function DayContent({ utgid, mode }: DayContentProps) {
     range,
     activityType,
   );
+  const isEnsuringPlan = useIsEnsuringPlan(utgid);
+  const { data: user } = useUser(utgid);
+  const profileKey = user
+    ? JSON.stringify([user.gender, user.date_of_birth, user.weight, user.height, user.goal, user.physical_activity])
+    : "";
+  const isRefreshingForProfile = useIsRefreshingFuturePlan(utgid, profileKey);
+  const today = nowStartOfDay();
+  const lastPlanDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 6);
+  const isFuturePlanDay = anchor > today && anchor <= lastPlanDay;
+  const showPlanLoading =
+    plansLoading ||
+    (!plans?.length && isEnsuringPlan) ||
+    (isRefreshingForProfile && isFuturePlanDay);
 
   const target = plans?.[0]
     ? activityType === "Food"
@@ -96,16 +111,20 @@ export function DayContent({ utgid, mode }: DayContentProps) {
 
       <div className="mt-5 flex flex-1 flex-col gap-4">
         <div className="rounded-card bg-[#272727] p-4">
-          <div className="flex items-center gap-4">
-            <ProgressRingBlock
-              remaining={remaining}
-              target={target}
-              isLoading={plansLoading}
-            />
-            <div className="flex-1">
-              {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
+          {showPlanLoading ? (
+            <PlanLoading />
+          ) : (
+            <div className="flex items-center gap-4">
+              <ProgressRingBlock
+                remaining={remaining}
+                target={target}
+                isLoading={false}
+              />
+              <div className="flex-1">
+                {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="rounded-card bg-[#272727]">

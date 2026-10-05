@@ -15,22 +15,48 @@ import { ChatPage } from "@/features/ai-chat/ChatPage";
 import { ProfilePage } from "@/features/profile/ProfilePage";
 import { EditProfilePage } from "@/features/profile/EditProfilePage";
 import { CalendarPage } from "@/features/profile/CalendarPage";
+import { useEnsurePlan } from "@/hooks/usePlans";
+import { apiErrorMessage } from "@/api/client";
 
-function AppRoutes({ utgid }: { utgid: number }) {
+function AppRoutes({
+  utgid,
+  planError,
+  retryPlan,
+}: {
+  utgid: number;
+  planError?: Error | null;
+  retryPlan: () => void;
+}) {
   return (
-    <Routes>
-      <Route element={<MainLayout utgid={utgid} />}>
-        <Route index element={<Navigate to="today/food" replace />} />
-        <Route path="today/:kind" element={<TodayPage utgid={utgid} />} />
-        <Route path="plan/:kind" element={<PlanPage utgid={utgid} />} />
-        <Route path="history/:kind" element={<HistoryPage utgid={utgid} />} />
-        <Route path="calendar" element={<CalendarPage utgid={utgid} />} />
-        <Route path="chat" element={<ChatPage />} />
-        <Route path="profile" element={<ProfilePage utgid={utgid} />} />
-        <Route path="profile/edit" element={<EditProfilePage utgid={utgid} />} />
-        <Route path="*" element={<Navigate to="today/food" replace />} />
-      </Route>
-    </Routes>
+    <>
+      {planError && <PlanError error={planError} retry={retryPlan} />}
+      <Routes>
+        <Route element={<MainLayout utgid={utgid} />}>
+          <Route index element={<Navigate to="today/food" replace />} />
+          <Route path="today/:kind" element={<TodayPage utgid={utgid} />} />
+          <Route path="plan/:kind" element={<PlanPage utgid={utgid} />} />
+          <Route path="history/:kind" element={<HistoryPage utgid={utgid} />} />
+          <Route path="calendar" element={<CalendarPage utgid={utgid} />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="profile" element={<ProfilePage utgid={utgid} />} />
+          <Route path="profile/edit" element={<EditProfilePage utgid={utgid} />} />
+          <Route path="*" element={<Navigate to="today/food" replace />} />
+        </Route>
+      </Routes>
+    </>
+  );
+}
+
+function PlanError({ error, retry }: { error: Error; retry: () => void }) {
+  return (
+    <div className="mx-5 mt-4 rounded-card bg-[#272727] p-4 text-on" role="alert">
+      <p className="text-bodySm text-danger">
+        Не удалось подготовить план. {apiErrorMessage(error)}
+      </p>
+      <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
+        Повторить
+      </button>
+    </div>
   );
 }
 
@@ -66,6 +92,10 @@ export default function App() {
 
 function UserGate({ tgId, name }: { tgId: number; name?: string }) {
   const { data: user, isLoading, isError } = useUser(tgId);
+  const profileKey = user
+    ? JSON.stringify([user.gender, user.date_of_birth, user.weight, user.height, user.goal, user.physical_activity])
+    : "";
+  const planQuery = useEnsurePlan(tgId, profileKey, !!user);
 
   if (isLoading) {
     return (
@@ -105,5 +135,5 @@ function UserGate({ tgId, name }: { tgId: number; name?: string }) {
     );
   }
 
-  return <AppRoutes utgid={tgId} />;
+  return <AppRoutes utgid={tgId} planError={planQuery.error} retryPlan={() => void planQuery.refetch()} />;
 }

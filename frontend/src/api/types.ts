@@ -55,7 +55,7 @@ export interface PlanResponse {
 }
 
 export interface PlanRequest {
-  date: number;
+	timezone: string;
 }
 
 export interface ActionResponse {

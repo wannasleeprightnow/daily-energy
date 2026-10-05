@@ -26,6 +26,14 @@ func InitDatabase(c config.Config) (*gorm.DB, error) {
 	); err != nil {
 		return nil, err
 	}
+	// Older installs could contain duplicate plan rows from repeated POSTs.
+	// Keep the most recently inserted row before enforcing the natural key.
+	if err := db.Exec(`DELETE FROM plans older USING plans newer WHERE older.utgid = newer.utgid AND older.date = newer.date AND older.type = newer.type AND older.ctid < newer.ctid`).Error; err != nil {
+		return nil, err
+	}
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_user_date_type ON plans (utgid, date, type)`).Error; err != nil {
+		return nil, err
+	}
 
 	// AutoMigrate creates the associations with ON DELETE CASCADE for new
 	// databases, but does not change the action of an existing foreign key.

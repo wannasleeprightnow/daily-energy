@@ -13,4 +13,5 @@ type Plan struct {
 	CaloriesToBurn    int               `gorm:"column:calories_to_burn"`
 	Recommendation    string            `gorm:"column:recommendation"`
 	Type              models.ActionType `gorm:"column:type"`
+	ProfileHash       string            `gorm:"column:profile_hash"`
 }

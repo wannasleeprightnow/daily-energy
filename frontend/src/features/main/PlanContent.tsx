@@ -101,4 +101,14 @@ export function CardLoading() {
   );
 }
 
+/** Placeholder shown in the plan card until automatic generation completes. */
+export function PlanLoading() {
+  return (
+    <div className="flex min-h-[150px] items-center justify-center gap-3 text-on/70" aria-live="polite">
+      <Spinner size={28} />
+      <span className="text-bodySm">Готовим план…</span>
+    </div>
+  );
+}
+
 export { CARD_BG };

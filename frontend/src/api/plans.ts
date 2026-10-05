@@ -65,7 +65,7 @@ export async function listPlans(
   return data;
 }
 
-/** POST /api/users/{utgid}/plans — generates the plan for a given date. */
+/** POST /api/users/{utgid}/plans — idempotently ensures the seven-day horizon. */
 export async function createPlan(
   utgid: number,
   plan: PlanRequest,
@@ -73,6 +73,7 @@ export async function createPlan(
   const { data } = await http.post<PlanResponse[]>(
     `/api/users/${utgid}/plans`,
     plan,
+    { timeout: 100_000 },
   );
   return data;
 }

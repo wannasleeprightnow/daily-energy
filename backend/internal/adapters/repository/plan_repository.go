@@ -6,6 +6,7 @@ import (
 	"github.com/isiyar/daily-energy/backend/internal/domain/models"
 	"github.com/isiyar/daily-energy/backend/internal/domain/ports"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type planRepository struct {
@@ -46,7 +47,13 @@ func (r *planRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Context,
 
 func (r *planRepository) Save(ctx context.Context, plans []models.Plan) error {
 	plansAdapter := toAdapterPlans(plans)
-	if err := r.db.WithContext(ctx).Save(&plansAdapter).Error; err != nil {
+	if len(plansAdapter) == 0 {
+		return nil
+	}
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "utgid"}, {Name: "date"}, {Name: "type"}},
+		DoUpdates: clause.AssignmentColumns([]string{"calories_to_consume", "calories_to_burn", "recommendation", "profile_hash"}),
+	}).Create(&plansAdapter).Error; err != nil {
 		return err
 	}
 	return nil

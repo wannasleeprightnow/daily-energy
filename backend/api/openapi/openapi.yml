@@ -370,7 +370,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     post:
-      summary: Создать новый план
+      summary: Создать или актуализировать план на ближайшие 7 дней
       tags: [ plans ]
       parameters:
         - name: utgid
@@ -386,8 +386,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PlanRequest'
       responses:
-        '201':
-          description: План создан
+        '200':
+          description: План создан или уже актуален
           content:
             application/json:
               schema:
@@ -747,12 +747,15 @@ components:
 
     PlanRequest:
       type: object
-      required:
-        - date
       properties:
+        timezone:
+          type: string
+          description: IANA timezone name, например Europe/Moscow
         date:
           type: integer
           format: int64
+          deprecated: true
+          description: Игнорируется; дата плана определяется сервером
 
     ActionResponse:
       type: object

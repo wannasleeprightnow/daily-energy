@@ -46,7 +46,8 @@ export function dateOf(timestampSeconds: number): string {
 export function dayRange(base: Date): { start_at: number; finish_at: number } {
   const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
   const start = Math.floor(d.getTime() / 1000);
-  const end = Math.floor(d.getTime() / 1000) + 86400;
+  const next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  const end = Math.floor(next.getTime() / 1000) - 1;
   return { start_at: start, finish_at: end };
 }
 
