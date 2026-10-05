@@ -35,6 +35,7 @@ func (r *actionRepository) GetByStartTimeAndFinishTime(ctx context.Context, star
 
 	err := r.db.WithContext(ctx).
 		Where("utgid = ? AND date BETWEEN ? AND ?", utgid, startAt, finishAt).
+		Order("date DESC").
 		Find(&adapterActions).Error
 
 	if err != nil {
@@ -49,6 +50,7 @@ func (r *actionRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Contex
 
 	err := r.db.WithContext(ctx).
 		Where("utgid = ? AND type = ? AND date BETWEEN ? AND ?", utgid, actionType, startAt, finishAt).
+		Order("date DESC").
 		Find(&adapterActions).Error
 
 	if err != nil {
