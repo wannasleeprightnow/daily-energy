@@ -16,6 +16,7 @@ interface WheelColumnProps<T> extends ColumnConfig<T> {
   /** Override the picker viewport width for responsive multi-column layouts. */
   viewportClassName?: string;
   valueClassName?: string;
+  displayValue?: (value: T) => string;
 }
 
 /**
@@ -31,6 +32,7 @@ export function WheelColumn<T extends string | number>({
   ariaLabel,
   viewportClassName,
   valueClassName,
+  displayValue,
 }: WheelColumnProps<T>) {
   const selectedIndex = Math.max(
     0,
@@ -112,7 +114,7 @@ export function WheelColumn<T extends string | number>({
             distance === 0 && "font-medium",
           )}
         >
-          {value}
+          {displayValue ? displayValue(value) : value}
           {unit ? ` ${unit}` : ""}
         </span>
       </div>

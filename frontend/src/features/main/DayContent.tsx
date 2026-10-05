@@ -161,6 +161,7 @@ export function DayContent({ utgid, mode }: DayContentProps) {
       <AddEntrySheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
+        onCalendar={() => navigate("/calendar")}
         utgid={utgid}
         type={activityType}
         date={anchor}

@@ -1,15 +1,17 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { ActionType } from "@/api/types";
-import { Button, Input, Sheet, Spinner, WheelColumn } from "@/ui";
+import { Button, Input, Spinner, WheelColumn } from "@/ui";
 import { CrossIcon } from "@/ui/icons";
 import { useCreateAction } from "@/hooks/useActions";
 import { estimateCalories } from "@/api/ai";
 import { apiErrorMessage } from "@/api/client";
 import { haptic } from "@/lib/telegram";
+import calendarIcon from "@/assets/icons/calendar.svg";
 
 interface AddEntrySheetProps {
   open: boolean;
   onClose: () => void;
+  onCalendar: () => void;
   utgid: number;
   type: ActionType;
   /** Day the entry belongs to (local midnight). */
@@ -18,18 +20,13 @@ interface AddEntrySheetProps {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const CALORIES = Array.from({ length: 3001 }, (_, i) => i);
 
-/**
- * "Добавить питание / активность" modal (Figma `150:142`, `150:322`).
- *
- * Bottom sheet with a title field, two time wheels (hours / minutes, centred
- * value fs27), and a save action. Food entries call `POST /api/ai/calories`
- * to estimate the calorie count from the title; activity entries take the
- * burned calories directly. The entry is persisted with `useCreateAction`.
- */
+/** Full-screen form for adding a meal or an activity. */
 export function AddEntrySheet({
   open,
   onClose,
+  onCalendar,
   utgid,
   type,
   date,
@@ -39,21 +36,54 @@ export function AddEntrySheet({
   const [title, setTitle] = useState("");
   const [hour, setHour] = useState(now.getHours());
   const [minute, setMinute] = useState(now.getMinutes());
-  const [calories, setCalories] = useState("");
+  const [calories, setCalories] = useState(235);
+  const [caloriesEdited, setCaloriesEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const caloriesRef = useRef<HTMLElement | null>(null);
 
   const createAction = useCreateAction(utgid);
 
   const reset = () => {
     setTitle("");
-    setCalories("");
+    setCalories(235);
+    setCaloriesEdited(false);
     setError(null);
   };
 
   const close = () => {
     reset();
     onClose();
+  };
+
+  const estimate = async () => {
+    const name = title.trim();
+    if (!name) {
+      haptic("warning");
+      setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
+      return;
+    }
+    if (!isFood) {
+      caloriesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    try {
+      setBusy(true);
+      setError(null);
+      const result = await estimateCalories({ title: name });
+      if (!result.calories || result.calories <= 0) {
+        throw new Error("Не удалось определить калории");
+      }
+      setCalories(result.calories);
+      setCaloriesEdited(true);
+      haptic("success");
+    } catch (err) {
+      haptic("error");
+      setError(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submit = async () => {
@@ -71,25 +101,23 @@ export function AddEntrySheet({
       hour,
       minute,
     );
-    const timestamp = Math.floor(at.getTime() / 1000);
 
     try {
       setBusy(true);
       setError(null);
-
-      let kcal = Number(calories);
-      if (isFood && (!calories || Number.isNaN(kcal))) {
+      let kcal = calories;
+      if (isFood && !caloriesEdited) {
         const estimate = await estimateCalories({ title: name });
         kcal = estimate.calories;
       }
-      if (Number.isNaN(kcal) || kcal <= 0) {
-        setError("Не удалось определить калории — введи вручную");
+      if (!kcal || Number.isNaN(kcal) || kcal <= 0) {
+        setError("Укажи количество калорий");
         haptic("warning");
         return;
       }
 
       await createAction.mutateAsync({
-        date: timestamp,
+        date: Math.floor(at.getTime() / 1000),
         activity_name: name,
         calories: Math.round(kcal),
         type,
@@ -106,60 +134,111 @@ export function AddEntrySheet({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onClose={close}>
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-h3 font-medium text-on">
-            {isFood ? "Что ты съел?" : "Чем занимался?"}
-          </h2>
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Закрыть"
-            className="flex h-11 w-11 items-center justify-center text-on"
-          >
-            <CrossIcon size={24} />
-          </button>
-        </div>
+    <div className="fixed inset-0 left-1/2 z-20 flex w-full max-w-app -translate-x-1/2 flex-col overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24">
+      <header className="mb-5 flex min-h-10 items-center gap-2">
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Закрыть"
+          className="flex h-10 w-10 shrink-0 items-center justify-center text-on"
+        >
+          <CrossIcon size={24} />
+        </button>
+        <h1 className="min-w-0 flex-1 truncate text-center text-[18px] font-medium text-accent">
+          {isFood ? "Новая запись о приёме пищи" : "Новая запись об активности"}
+        </h1>
+        <button
+          type="button"
+          onClick={onCalendar}
+          aria-label="Выбрать дату"
+          className="flex h-10 w-10 shrink-0 items-center justify-center"
+        >
+          <img src={calendarIcon} alt="" aria-hidden="true" className="h-9 w-9" />
+        </button>
+      </header>
 
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder={isFood ? "Например: овсянка с бананом" : "Например: бег"}
-          aria-label={isFood ? "Название блюда" : "Название активности"}
-        />
+      <div className="flex flex-1 flex-col gap-4">
+        <section className="rounded-card bg-[#272727] px-6 py-3">
+          <h2 className="text-[24px] font-medium leading-8 text-on">🕒 Время</h2>
+          <div className="flex items-center justify-center gap-0">
+            <div className="w-[88px] shrink-0">
+              <WheelColumn
+                values={HOURS}
+                selected={hour}
+                onSelect={setHour}
+                ariaLabel="Часы"
+                displayValue={(value) => String(value).padStart(2, "0")}
+                viewportClassName="h-[105px] w-[88px]"
+                valueClassName="text-[27px] leading-8"
+              />
+            </div>
+            <span className="text-[26px] text-on">:</span>
+            <div className="w-[88px] shrink-0">
+              <WheelColumn
+                values={MINUTES}
+                selected={minute}
+                onSelect={setMinute}
+                ariaLabel="Минуты"
+                displayValue={(value) => String(value).padStart(2, "0")}
+                viewportClassName="h-[105px] w-[88px]"
+                valueClassName="text-[27px] leading-8"
+              />
+            </div>
+          </div>
+        </section>
 
-        <div className="flex items-center justify-center gap-4 rounded-card bg-[#272727] px-4 py-4">
-          <WheelColumn
-            values={HOURS}
-            selected={hour}
-            onSelect={setHour}
-            label="Часы"
-            ariaLabel="hours"
-          />
-          <span className="text-h3 text-on">:</span>
-          <WheelColumn
-            values={MINUTES}
-            selected={minute}
-            onSelect={setMinute}
-            label="Минуты"
-            ariaLabel="minutes"
-          />
-        </div>
-
-        {!isFood && (
+        <section className="rounded-card bg-[#272727] px-5 py-3">
+          <h2 className="mb-3 text-[24px] font-medium leading-8 text-on">⚡ Название</h2>
           <Input
-            value={calories}
-            inputMode="numeric"
-            onChange={(e) => setCalories(e.target.value.replace(/\D/g, ""))}
-            placeholder="Сколько калорий сожжено"
-            aria-label="Калории"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder={isFood ? "Например: овсянка с бананом" : "Например: бег"}
+            aria-label={isFood ? "Название блюда" : "Название активности"}
+            className="h-[50px] rounded-[18px] bg-black px-5 py-2 !text-[18px] placeholder:!text-[18px] placeholder:text-[#858585] placeholder:opacity-100"
+            style={{ backgroundColor: "#000000" }}
           />
-        )}
+        </section>
+
+        <Button
+          fullWidth
+          onClick={() => void estimate()}
+          disabled={busy || createAction.isPending}
+          className="min-h-[53px] rounded-[16px] px-3 text-[16px] font-medium"
+        >
+          {busy ? (
+            <Spinner size={22} />
+          ) : (
+            "Пусть Рафик сделает расчёт калорий"
+          )}
+        </Button>
+
+        <section
+          ref={caloriesRef}
+          className="rounded-card bg-[#272727] px-5 py-3"
+        >
+          <h2 className="text-[24px] font-medium leading-8 text-on">
+            🔥 Потреблено калорий
+          </h2>
+          <div className="mt-2 flex justify-center">
+            <WheelColumn
+              values={CALORIES}
+              selected={calories}
+              onSelect={(value) => {
+                setCalories(value);
+                setCaloriesEdited(true);
+              }}
+              ariaLabel="Калории"
+              viewportClassName="h-[105px] w-full max-w-[180px]"
+              valueClassName="text-[27px] leading-8"
+            />
+          </div>
+        </section>
 
         {error && (
-          <p role="alert" className="text-bodySm text-danger">
+          <p role="alert" className="px-2 text-center text-bodySm text-danger">
             {error}
           </p>
         )}
@@ -168,11 +247,12 @@ export function AddEntrySheet({
           fullWidth
           onClick={() => void submit()}
           disabled={busy || createAction.isPending}
-          className="min-h-[57px] bg-[#f08629] text-h3 font-medium"
+          className="mt-auto min-h-[50px] rounded-[16px] text-[23px] font-medium"
+          style={{ backgroundColor: "#f08629", color: "#ffffff" }}
         >
-          {busy ? <Spinner size={24} /> : "Добавить"}
+          {busy ? <Spinner size={24} /> : "Добавить запись"}
         </Button>
       </div>
-    </Sheet>
+    </div>
   );
 }
