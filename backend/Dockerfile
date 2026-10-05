@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM golang:1.24 AS builder
 
 ARG TARGETOS
@@ -7,11 +8,14 @@ WORKDIR /backend
 
 COPY go.mod go.sum ./
 
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build -o main ./cmd/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOMAXPROCS=2 CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
+    go build -p=1 -o main ./cmd/
 
 FROM alpine:latest
 
