@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ActionType } from "@/api/types";
 import { Button, Input, Spinner, WheelColumn } from "@/ui";
 import { CrossIcon } from "@/ui/icons";
 import { useCreateAction } from "@/hooks/useActions";
-import { estimateCalories } from "@/api/ai";
+import { estimateActivityCalories, estimateCalories } from "@/api/ai";
 import { apiErrorMessage } from "@/api/client";
+import { useUser } from "@/hooks/useUser";
 import { haptic } from "@/lib/telegram";
 import calendarIcon from "@/assets/icons/calendar.svg";
 
@@ -20,7 +21,52 @@ interface AddEntrySheetProps {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const DURATION_HOURS = Array.from({ length: 10 }, (_, i) => i);
 const CALORIES = Array.from({ length: 3001 }, (_, i) => i);
+
+function TimeWheelPair({
+  hours,
+  minutes,
+  onHoursChange,
+  onMinutesChange,
+  hourValues,
+  ariaPrefix,
+}: {
+  hours: number;
+  minutes: number;
+  onHoursChange: (value: number) => void;
+  onMinutesChange: (value: number) => void;
+  hourValues: number[];
+  ariaPrefix: string;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-0">
+      <div className="w-[88px] shrink-0">
+        <WheelColumn
+          values={hourValues}
+          selected={hours}
+          onSelect={onHoursChange}
+          ariaLabel={`${ariaPrefix}-hours`}
+          displayValue={(value) => String(value).padStart(2, "0")}
+          viewportClassName="h-[105px] w-[88px]"
+          valueClassName="text-[27px] leading-8"
+        />
+      </div>
+      <span className="text-[26px] text-on">:</span>
+      <div className="w-[88px] shrink-0">
+        <WheelColumn
+          values={MINUTES}
+          selected={minutes}
+          onSelect={onMinutesChange}
+          ariaLabel={`${ariaPrefix}-minutes`}
+          displayValue={(value) => String(value).padStart(2, "0")}
+          viewportClassName="h-[105px] w-[88px]"
+          valueClassName="text-[27px] leading-8"
+        />
+      </div>
+    </div>
+  );
+}
 
 /** Full-screen form for adding a meal or an activity. */
 export function AddEntrySheet({
@@ -36,18 +82,29 @@ export function AddEntrySheet({
   const [title, setTitle] = useState("");
   const [hour, setHour] = useState(now.getHours());
   const [minute, setMinute] = useState(now.getMinutes());
+  const [durationHours, setDurationHours] = useState(0);
+  const [durationMinutes, setDurationMinutes] = useState(30);
   const [calories, setCalories] = useState(235);
   const [caloriesEdited, setCaloriesEdited] = useState(false);
+  const [estimatedForDuration, setEstimatedForDuration] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const caloriesRef = useRef<HTMLElement | null>(null);
 
   const createAction = useCreateAction(utgid);
+  const { data: user } = useUser(utgid);
+  const durationMinutesTotal = durationHours * 60 + durationMinutes;
+  const durationLabel =
+    [durationHours > 0 ? `${durationHours} ч` : "", durationMinutes > 0 ? `${durationMinutes} мин` : ""]
+      .filter(Boolean)
+      .join(" ") || "0 мин";
 
   const reset = () => {
     setTitle("");
     setCalories(235);
     setCaloriesEdited(false);
+    setEstimatedForDuration(null);
+    setDurationHours(0);
+    setDurationMinutes(30);
     setError(null);
   };
 
@@ -63,20 +120,36 @@ export function AddEntrySheet({
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
       return;
     }
-    if (!isFood) {
-      caloriesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!isFood && durationMinutesTotal < 1) {
+      haptic("warning");
+      setError("Выбери длительность активности");
       return;
     }
-
     try {
       setBusy(true);
       setError(null);
-      const result = await estimateCalories({ title: name });
+      const result = isFood
+        ? await estimateCalories({ title: name })
+        : user
+          ? await estimateActivityCalories({
+              title: name,
+              weight: user.weight,
+              height: user.height,
+              gender: user.gender,
+              date_of_birth: user.date_of_birth,
+              physical_activity: user.physical_activity,
+              duration_minutes: durationMinutesTotal,
+            })
+          : null;
+      if (!result) {
+        throw new Error("Не удалось загрузить данные профиля");
+      }
       if (!result.calories || result.calories <= 0) {
         throw new Error("Не удалось определить калории");
       }
       setCalories(result.calories);
       setCaloriesEdited(true);
+      setEstimatedForDuration(isFood ? null : durationMinutesTotal);
       haptic("success");
     } catch (err) {
       haptic("error");
@@ -91,6 +164,16 @@ export function AddEntrySheet({
     if (!name) {
       haptic("warning");
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
+      return;
+    }
+    if (!isFood && durationMinutesTotal < 1) {
+      haptic("warning");
+      setError("Выбери длительность активности");
+      return;
+    }
+    if (!isFood && estimatedForDuration !== null && estimatedForDuration !== durationMinutesTotal) {
+      haptic("warning");
+      setError("Длительность изменилась — пересчитай калории");
       return;
     }
 
@@ -108,6 +191,11 @@ export function AddEntrySheet({
       let kcal = calories;
       if (isFood && !caloriesEdited) {
         const estimate = await estimateCalories({ title: name });
+        if (!estimate.calories || estimate.calories <= 0) {
+          setError("Не удалось определить калории — попробуй ещё раз");
+          haptic("warning");
+          return;
+        }
         kcal = estimate.calories;
       }
       if (!kcal || Number.isNaN(kcal) || kcal <= 0) {
@@ -163,31 +251,14 @@ export function AddEntrySheet({
       <div className="flex flex-1 flex-col gap-4">
         <section className="rounded-card bg-[#272727] px-6 py-3">
           <h2 className="text-[24px] font-medium leading-8 text-on">🕒 Время</h2>
-          <div className="flex items-center justify-center gap-0">
-            <div className="w-[88px] shrink-0">
-              <WheelColumn
-                values={HOURS}
-                selected={hour}
-                onSelect={setHour}
-                ariaLabel="Часы"
-                displayValue={(value) => String(value).padStart(2, "0")}
-                viewportClassName="h-[105px] w-[88px]"
-                valueClassName="text-[27px] leading-8"
-              />
-            </div>
-            <span className="text-[26px] text-on">:</span>
-            <div className="w-[88px] shrink-0">
-              <WheelColumn
-                values={MINUTES}
-                selected={minute}
-                onSelect={setMinute}
-                ariaLabel="Минуты"
-                displayValue={(value) => String(value).padStart(2, "0")}
-                viewportClassName="h-[105px] w-[88px]"
-                valueClassName="text-[27px] leading-8"
-              />
-            </div>
-          </div>
+          <TimeWheelPair
+            hours={hour}
+            minutes={minute}
+            onHoursChange={setHour}
+            onMinutesChange={setMinute}
+            hourValues={HOURS}
+            ariaPrefix="Время записи"
+          />
         </section>
 
         <section className="rounded-card bg-[#272727] px-5 py-3">
@@ -202,6 +273,22 @@ export function AddEntrySheet({
           />
         </section>
 
+        {!isFood && (
+          <section className="rounded-card bg-[#272727] px-6 py-3">
+            <h2 className="text-[24px] font-medium leading-8 text-on">
+              ⏱ Длительность активности
+            </h2>
+            <TimeWheelPair
+              hours={durationHours}
+              minutes={durationMinutes}
+              onHoursChange={setDurationHours}
+              onMinutesChange={setDurationMinutes}
+              hourValues={DURATION_HOURS}
+              ariaPrefix="Длительность активности"
+            />
+          </section>
+        )}
+
         <Button
           fullWidth
           onClick={() => void estimate()}
@@ -214,9 +301,13 @@ export function AddEntrySheet({
             "Пусть Рафик сделает расчёт калорий"
           )}
         </Button>
+        {!isFood && (
+          <p className="-mt-3 text-center text-[12px] text-on/60">
+            Примерная оценка для занятия длительностью {durationLabel}
+          </p>
+        )}
 
         <section
-          ref={caloriesRef}
           className="rounded-card bg-[#272727] px-5 py-3"
         >
           <h2 className="text-[24px] font-medium leading-8 text-on">
@@ -229,6 +320,7 @@ export function AddEntrySheet({
               onSelect={(value) => {
                 setCalories(value);
                 setCaloriesEdited(true);
+                setEstimatedForDuration(null);
               }}
               ariaLabel="Калории"
               viewportClassName="h-[105px] w-full max-w-[180px]"

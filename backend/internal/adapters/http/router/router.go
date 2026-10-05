@@ -66,6 +66,7 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 	ai := r.Group("/ai", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth))
 	{
 		ai.POST("/calories", h.Ai.CalculationCalories)
+		ai.POST("/activity-calories", h.Ai.CalculationActivityCalories)
 	}
 
 	r.GET("/ws/chat", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth), h.Chat.HandleChat)

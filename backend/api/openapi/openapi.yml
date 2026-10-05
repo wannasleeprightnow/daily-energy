@@ -580,6 +580,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/ai/activity-calories:
+    post:
+      summary: Рассчитать расход калорий на активность
+      tags: [ ai ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCaloriesRequest'
+      responses:
+        '200':
+          description: Калории рассчитаны
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaloriesResponse'
+        '400':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     TelegramInitData:
@@ -801,6 +825,44 @@ components:
       properties:
         title:
           type: string
+
+    ActivityCaloriesRequest:
+      type: object
+      required:
+        - title
+        - weight
+        - height
+        - gender
+        - date_of_birth
+        - physical_activity
+        - duration_minutes
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        weight:
+          type: integer
+          minimum: 30
+          maximum: 300
+        height:
+          type: integer
+          minimum: 100
+          maximum: 250
+        gender:
+          type: string
+          enum: [Male, Female]
+        date_of_birth:
+          type: integer
+          format: int64
+          description: Unix timestamp of the user's date of birth, in seconds.
+        physical_activity:
+          type: string
+          enum: [Low, Medium, High]
+        duration_minutes:
+          type: integer
+          minimum: 1
+          maximum: 600
+          description: Activity session duration in minutes.
 
     CaloriesResponse:
       type: object

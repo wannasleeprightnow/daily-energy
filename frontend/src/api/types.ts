@@ -78,8 +78,18 @@ export interface CaloriesRequest {
   title: string;
 }
 
+export interface ActivityCaloriesRequest {
+  title: string;
+  weight: number;
+  height: number;
+  gender: Gender;
+  date_of_birth: number;
+  physical_activity: PhysicalActivity;
+  duration_minutes: number;
+}
+
 export interface CaloriesResponse {
-  calories: number;
+  calories: number | null;
 }
 
 export interface ErrorResponse {
