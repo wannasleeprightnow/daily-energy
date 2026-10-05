@@ -9,6 +9,7 @@ interface ProgressRingProps {
   thickness?: number;
   children?: React.ReactNode;
   className?: string;
+  lowerLabel?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ export function ProgressRing({
   thickness = 6,
   children,
   className,
+  lowerLabel = false,
 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(1, progress));
   const radius = (size - thickness) / 2;
@@ -58,7 +60,7 @@ export function ProgressRing({
           style={{ transition: "stroke-dasharray 0.4s ease" }}
         />
       </svg>
-      <div className="absolute inset-x-0 flex items-center justify-center pb-4">
+      <div className={lowerLabel ? "absolute inset-0 flex items-end justify-center pb-2" : "absolute inset-x-0 flex items-center justify-center pb-4"}>
         {children}
       </div>
     </div>

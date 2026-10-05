@@ -4,6 +4,9 @@ import type { ActionType } from "@/api/types";
 import { useActions } from "@/hooks/useActions";
 import { useIsEnsuringPlan, useIsRefreshingFuturePlan, usePlans } from "@/hooks/usePlans";
 import { useUser } from "@/hooks/useUser";
+import calendarIcon from "@/assets/icons/calendar.svg";
+import plusIcon from "@/assets/icons/plus.svg";
+import runningIcon from "@/assets/icons/running.svg";
 import {
   dayRange,
   formatDateWithMonth,
@@ -89,15 +92,20 @@ export function DayContent({ utgid, mode }: DayContentProps) {
   const remaining = target === null ? null : Math.max(0, target - consumed);
   const recommendation = plans?.[0]?.recommendation.trim();
 
+  const isAnchorToday =
+    anchor.getFullYear() === today.getFullYear() &&
+    anchor.getMonth() === today.getMonth() &&
+    anchor.getDate() === today.getDate();
   const title =
-    mode === "today"
+    mode === "today" || (mode === "plan" && isAnchorToday)
       ? "Сегодняшний план"
       : mode === "history"
         ? `История за ${formatShortDate(anchor.getTime() / 1000)}`
         : `План на ${formatShortDate(anchor.getTime() / 1000)}`;
+  const isActivity = activityType === "Activity";
 
   return (
-    <div className="flex min-h-full flex-col px-5 pt-5">
+    <div className={`flex min-h-full flex-col pt-5 ${isActivity ? "px-6" : "px-5"}`}>
       <DayHeader
         title={title}
         kind={activityType}
@@ -109,45 +117,67 @@ export function DayContent({ utgid, mode }: DayContentProps) {
         onCalendar={() => navigate("/calendar")}
       />
 
-      <div className="mt-5 flex flex-1 flex-col gap-4">
-        <div className="rounded-card bg-[#272727] p-4">
-          {showPlanLoading ? (
-            <PlanLoading />
-          ) : (
-            <div className="flex items-center gap-4">
-              <ProgressRingBlock
-                remaining={remaining}
-                target={target}
-                isLoading={false}
+      <div className={`mt-5 flex flex-1 flex-col gap-4 ${isActivity ? "pb-24" : ""}`}>
+        {isActivity ? (
+          <>
+            <section className="rounded-card bg-[#272727] p-[14px]">
+              {showPlanLoading ? (
+                <PlanLoading />
+              ) : (
+                <>
+                  <div className="flex items-center justify-around gap-3">
+                    <img
+                      src={runningIcon}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-[100px] w-[75px] object-contain"
+                    />
+                    <ProgressRingBlock
+                      remaining={remaining}
+                      target={target}
+                      isLoading={false}
+                      size={150}
+                      showConsumedProgress
+                    />
+                  </div>
+                  {recommendation && (
+                    <div className="mt-2">
+                      <AiAdviceCard large>{recommendation}</AiAdviceCard>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+            <section className="rounded-card bg-[#272727] p-[14px]">
+              <HistorySection
+                actions={actions}
+                actionsLoading={actionsLoading}
+                onAdd={() => setAddOpen(true)}
+                compact
               />
-              <div className="flex-1">
-                {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
-              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <div className="rounded-card bg-[#272727] p-4">
+              {showPlanLoading ? (
+                <PlanLoading />
+              ) : (
+                <div className="flex items-center gap-4">
+                  <ProgressRingBlock remaining={remaining} target={target} isLoading={false} />
+                  <div className="min-w-0 flex-1">
+                    {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-
-        <div className="rounded-card bg-[#272727]">
-          <div className="flex items-center justify-between px-4 pt-4">
-            <h2 className="text-body font-medium text-on/80">История</h2>
-            <button
-              type="button"
-              aria-label="Добавить"
-              onClick={() => setAddOpen(true)}
-              className="flex h-11 w-11 items-center justify-center"
-            >
-              <AddGlyph />
-            </button>
-          </div>
-          {actionsLoading ? (
-            <CardLoading />
-          ) : (
-            <ActionList
+            <HistorySection
               actions={actions}
-              emptyLabel="Тут пока ничего:)"
+              actionsLoading={actionsLoading}
+              onAdd={() => setAddOpen(true)}
             />
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       <AddEntrySheet
@@ -157,6 +187,46 @@ export function DayContent({ utgid, mode }: DayContentProps) {
         type={activityType}
         date={anchor}
       />
+    </div>
+  );
+}
+
+function HistorySection({
+  actions,
+  actionsLoading,
+  onAdd,
+  compact = false,
+}: {
+  actions?: import("@/api/types").ActionResponse[];
+  actionsLoading: boolean;
+  onAdd: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? "" : "rounded-card bg-[#272727]"}>
+      <div className={`flex items-center justify-between ${compact ? "px-0" : "px-4"} pt-1`}>
+        <h2 className={compact ? "text-[24px] font-medium leading-8 text-[#858585]" : "text-body font-medium text-on/80"}>
+          История
+        </h2>
+        <button
+          type="button"
+          aria-label="Добавить"
+          onClick={onAdd}
+          className="flex h-10 w-10 items-center justify-center"
+        >
+          <img src={plusIcon} alt="" aria-hidden="true" className={compact ? "h-[29px] w-[29px]" : "h-[22px] w-[22px]"} />
+        </button>
+      </div>
+      <div
+        className={compact ? "activity-history-scroll max-h-[220px] overflow-y-auto overscroll-contain pr-2" : ""}
+        aria-label={compact ? "Список активностей" : undefined}
+      >
+        {actionsLoading ? (
+          <CardLoading />
+        ) : (
+          <ActionList actions={actions} emptyLabel="Тут пока ничего:)" compact={compact} />
+        )}
+      </div>
     </div>
   );
 }
@@ -174,15 +244,17 @@ function DayHeader({
 }) {
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-h1 text-on">{title}</h1>
+      <div className={`mb-4 flex items-start justify-between ${kind === "Activity" ? "gap-3" : ""}`}>
+        <h1 className={kind === "Activity" ? "max-w-[260px] text-[32px] font-medium leading-[37px] text-on" : "text-h1 text-on"}>
+          {title}
+        </h1>
         <button
           type="button"
           aria-label="Календарь"
           onClick={onCalendar}
-          className="flex h-11 w-11 items-center justify-center"
+          className="flex h-11 w-11 shrink-0 items-center justify-center"
         >
-          <CalendarGlyph />
+          <img src={calendarIcon} alt="" aria-hidden="true" className="h-[36px] w-[36px]" />
         </button>
       </div>
       <ToggleTabs value={kind} onChange={onKindChange} />
@@ -209,49 +281,18 @@ function ToggleTabs({
           type="button"
           aria-pressed={value === it.value}
           onClick={() => onChange(it.value)}
-          className={`min-h-10 rounded-card px-4 text-bodySm font-medium transition-colors ${
-            value === it.value ? "bg-accent text-on" : "bg-transparent text-on"
+          className={`min-h-11 rounded-card px-[18px] text-[18px] font-medium transition-colors ${
+            value === it.value
+              ? it.value === "Activity"
+                ? "bg-[#303030] text-on ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
+                : "bg-accent text-on"
+              : "bg-transparent text-on"
           }`}
         >
           {it.label}
         </button>
       ))}
     </div>
-  );
-}
-
-function CalendarGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden>
-      <rect
-        x="3"
-        y="5"
-        width="18"
-        height="16"
-        rx="3"
-        stroke="#f08629"
-        strokeWidth="2"
-      />
-      <path
-        d="M8 3v4M16 3v4M3 10h18"
-        stroke="#f08629"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function AddGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="#f08629"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 
