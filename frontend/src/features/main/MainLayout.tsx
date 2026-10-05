@@ -35,11 +35,17 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
       {planError && (
         <div className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg" role="alert">
           <p className="min-w-0 break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
-            Не удалось подготовить план. {apiErrorMessage(planError)}
+            {planErrorSummary(planError)}
           </p>
           <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
             Повторить
           </button>
+          <details className="mt-2 text-caption text-on/70">
+            <summary className="min-h-11 cursor-pointer content-center">Подробности ошибки</summary>
+            <p className="max-h-24 overflow-y-auto break-words whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>
+              {apiErrorMessage(planError)}
+            </p>
+          </details>
         </div>
       )}
       <Outlet />
@@ -77,6 +83,17 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
       />
     </AppShell>
   );
+}
+
+function planErrorSummary(error: Error): string {
+  const details = apiErrorMessage(error).toLowerCase();
+  if (details.includes("429") || details.includes("rate limit") || details.includes("free-models-per-day")) {
+    return "ИИ-сервис временно перегружен или достигнут лимит запросов. Попробуй позже.";
+  }
+  if (details.includes("timeout") || details.includes("timed out")) {
+    return "ИИ-сервис не ответил вовремя. Попробуй ещё раз.";
+  }
+  return "Не удалось подготовить план. Попробуй ещё раз.";
 }
 
 /**
