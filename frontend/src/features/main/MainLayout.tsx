@@ -120,8 +120,10 @@ function SegmentedTabs({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(it.value)}
-            className={`flex min-h-10 min-w-11 items-center justify-center gap-2 rounded-card px-4 text-bodySm font-medium transition-colors ${
-              active ? "bg-accent text-on" : "bg-transparent text-on"
+            className={`flex min-h-10 min-w-11 items-center justify-center gap-2 rounded-card border px-4 text-bodySm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              active
+                ? "border-accent bg-transparent text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
+                : "border-transparent bg-transparent text-on"
             }`}
           >
             {it.Icon && <it.Icon size={20} color="currentColor" />}

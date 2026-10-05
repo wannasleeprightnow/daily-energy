@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AppShell, GhostButton } from "@/ui";
+import { GhostButton } from "@/ui";
 import {
   ArrowLeftIcon,
-  CalendarEventIcon,
   CrossIcon,
 } from "@/ui/icons";
 import { MONTHS_RU } from "@/constants";
@@ -21,7 +20,7 @@ interface CalendarPageProps {
  * Header "Июль 2025" (fs27/w500) with the CalendarEvent icon (36×36, `#f08629`),
  * a close (Cross 24×24) and a month switcher (ArrowLeft / ArrowRight). The grid
  * is 316×394 r15 `#272727`: weekday headers (Пн-Вс fs22/w500) plus day cells
- * rendered as 20×20 ellipses (`#383838`, selected `#f08629`).
+ * rendered as 20×20 ellipses (`#383838`, selected with an accent outline).
  *
  * Picking a day stores it through `writeDayPick()` and routes to the plan or
  * history view for that day, mirroring the Figma flow.
@@ -61,21 +60,18 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
   };
 
   return (
-    <AppShell className="flex flex-col px-5 pb-24 pt-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <CalendarEventIcon size={36} color="#f08629" />
-          <h1 className="text-h3 font-medium text-on">
-            {MONTHS_RU[view.getMonth()]} {view.getFullYear()}
-          </h1>
-        </div>
+    <div className="flex flex-col px-6 pt-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-h1 text-on">
+          {MONTHS_RU[view.getMonth()]} {view.getFullYear()}
+        </h1>
 
         <GhostButton onClick={() => navigate(-1)} aria-label="Закрыть">
           <CrossIcon size={24} />
         </GhostButton>
       </div>
 
-      <div className="mt-5 flex w-full max-w-[316px] flex-col self-center rounded-card bg-[#272727] px-4 py-5">
+      <div className="mt-5 flex w-full flex-col rounded-card bg-[#272727] px-4 py-5">
         <div className="mb-3 grid grid-cols-7 gap-1">
           {WEEKDAYS_RU.map((wd) => (
             <span
@@ -104,8 +100,10 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
                 className="flex h-11 items-center justify-center"
               >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-[14px] font-medium tabular-nums ${
-                    isSelected ? "bg-[#f08629] text-on" : "bg-[#383838] text-on/70"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[14px] font-medium tabular-nums ${
+                    isSelected
+                      ? "border-accent bg-[#383838] text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
+                      : "border-transparent bg-[#383838] text-on/70"
                   }`}
                 >
                   {cell.getDate()}
@@ -128,7 +126,7 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
           </GhostButton>
         </div>
       </div>
-    </AppShell>
+    </div>
   );
 }
 

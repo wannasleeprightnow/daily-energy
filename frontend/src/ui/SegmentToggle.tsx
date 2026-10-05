@@ -17,7 +17,7 @@ interface SegmentToggleProps<T extends string> {
 /**
  * Segmented pill control for the menu / undefined-switch on plan screens,
  * plus the nutrition↔activity toggle (Group 11, 112×42 r15).
- * Active segment is accent `#f08629`, inactive `#303030`.
+ * Active segment is outlined with the accent; inactive stays transparent.
  */
 export function SegmentToggle<T extends string>({
   items,
@@ -37,9 +37,10 @@ export function SegmentToggle<T extends string>({
             aria-pressed={active}
             className={clsx(
               "flex min-h-10 min-w-11 items-center justify-center gap-2 px-3 text-bodySm font-medium transition-colors",
-              "rounded-card focus:outline-none",
-              active && "bg-accent text-on",
-              !active && "bg-transparent text-on",
+              "rounded-card border focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              active
+                ? "border-accent bg-transparent text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
+                : "border-transparent bg-transparent text-on",
             )}
           >
             {item.icon}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Goal, PhysicalActivity } from "@/api/types";
-import { AppShell, GhostButton, Input, OptionButton, Spinner, Text, WheelColumn } from "@/ui";
+import { GhostButton, Input, OptionButton, Spinner, Text, WheelColumn } from "@/ui";
 import { ArrowLeftIcon, CheckIcon } from "@/ui/icons";
 import { useUpdateUser, useUser } from "@/hooks/useUser";
 import { apiErrorMessage } from "@/api/client";
@@ -71,9 +71,9 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
 
   if (isLoading || !current || !user) {
     return (
-      <AppShell className="items-center justify-center" aria-live="polite">
+      <div className="flex flex-1 items-center justify-center" aria-live="polite">
         <Spinner size={40} />
-      </AppShell>
+      </div>
     );
   }
 
@@ -117,7 +117,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const labelClass = "mb-3 block text-[20px] font-medium text-on";
 
   return (
-    <AppShell className="flex flex-col px-5 pb-24 pt-6">
+    <div className="flex flex-col px-5 pt-6">
       <div className="mb-4 flex items-center justify-between">
         <GhostButton onClick={() => navigate(-1)} aria-label="Назад" className="-ml-2 text-on">
           <ArrowLeftIcon size={27} />
@@ -238,7 +238,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
           </Text>
         )}
       </div>
-    </AppShell>
+    </div>
   );
 }
 

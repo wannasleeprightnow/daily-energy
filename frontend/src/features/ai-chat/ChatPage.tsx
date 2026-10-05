@@ -258,13 +258,7 @@ export function ChatPage() {
         </div>
       )}
 
-      {!hasMessages && connectionState !== "connected" && (
-        <p className="mt-3 text-center text-xs text-on/55" role="status">
-          {connectionState === "connecting" ? "Подключаюсь к чату…" : "Переподключаюсь к чату…"}
-        </p>
-      )}
-
-      <div className={hasMessages ? "mt-auto shrink-0 px-[8%] pb-10 pt-6" : "mx-auto mt-[72px] w-[84%] shrink-0 pb-8"}>
+      <div className={hasMessages ? "mt-auto shrink-0 px-[8%] pb-10 pt-6" : "mx-auto mt-8 w-[84%] shrink-0 pb-8"}>
         <ChatInput
           value={draft}
           onChange={setDraft}
@@ -340,8 +334,8 @@ function ChatInput({
       placeholder={placeholder}
       aria-label="Сообщение для Рафика"
       disabled={disabled}
-      rows={expanded ? 4 : 2}
-      className={`block w-full resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[118px]" : "min-h-[58px] max-h-28"}`}
+      rows={expanded ? 3 : 2}
+      className={`block w-full resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[80px]" : "min-h-[58px] max-h-28"}`}
     />
   );
 }
