@@ -51,7 +51,10 @@ services:
 
   backend-prod:
     container_name: backend-prod
-    image: ${DOCKER_USERNAME}/daily-energy-backend:${TAG:-latest}
+    image: daily-energy-backend:${TAG:-latest}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - path: .env
@@ -206,7 +209,10 @@ services:
   
   frontend-prod:
     container_name: frontend-prod
-    image: ${DOCKER_USERNAME}/daily-energy-frontend:${TAG:-latest}
+    image: daily-energy-frontend:${TAG:-latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
       - path: .env

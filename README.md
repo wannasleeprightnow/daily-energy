@@ -77,16 +77,16 @@ Vite доступен на [http://localhost:5174](http://localhost:5174) и и�
 
 ## Production
 
-Production-профиль использует опубликованные Docker-образы, PostgreSQL и Nginx. Nginx принимает HTTP-01 challenge, certbot получает сертификат и обновляет его каждые 12 часов; Nginx замечает первый сертификат и регулярно перечитывает файлы после продления.
+Production-профиль собирает backend и frontend локально на сервере из Dockerfile проекта, затем запускает PostgreSQL, Nginx и Certbot. Nginx принимает HTTP-01 challenge; Certbot получает сертификат и проверяет его обновление каждые 12 часов. Nginx перечитывает файлы после выпуска и продления сертификата.
 
-На сервере заранее направьте A/AAAA записи `SERVER_NAME` на его публичный IP, разрешите входящие TCP 80 и 443 и установите Docker Compose v2. Укажите в `.env` `DB_*`, `TELEGRAM_BOT_TOKEN`, `MINI_APP_URL` (например `https://app.example.com/`), `CERTBOT_EMAIL`, `API_KEY`, `DOCKER_USERNAME`, `TAG` и `SERVER_NAME`. `MINI_APP_URL` должен совпадать с доменом, на который выпущен сертификат. Затем запустите:
+На сервере заранее направьте A/AAAA записи `SERVER_NAME` на его публичный IP, разрешите входящие TCP 80 и 443 и установите Docker Compose v2. В checkout проекта укажите в `.env` `DB_*`, `TELEGRAM_BOT_TOKEN`, `MINI_APP_URL` (например `https://app.example.com/`), `CERTBOT_EMAIL`, `API_KEY`, `TAG` и `SERVER_NAME`. `MINI_APP_URL` должен совпадать с доменом, на который выпущен сертификат. Затем запустите:
 
 ```bash
 make configure-prod
 make up
 ```
 
-Первый запуск может занять несколько минут: пока Let's Encrypt проверяет домен, Nginx отдаёт HTTP challenge и страницу ожидания. Когда сертификат будет создан, Nginx автоматически переключится на HTTPS. Снаружи frontend, API и WebSocket доступны только через Nginx на портах 80/443; API использует относительный путь `/api`.
+`make up` собирает backend и frontend на сервере, поэтому checkout должен содержать исходный код и Dockerfile. Первый запуск может занять несколько минут: пока Let's Encrypt проверяет домен, Nginx отдаёт HTTP challenge и страницу ожидания. Когда сертификат будет создан, Nginx автоматически переключится на HTTPS. Снаружи frontend, API и WebSocket доступны только через Nginx на портах 80/443; API использует относительный путь `/api`.
 
 ### Привязка Mini App к боту
 
