@@ -249,7 +249,7 @@ func (h *PlanHandler) generatePlanOnce(ctx context.Context, user models.User, ti
 	if err != nil {
 		return nil, err
 	}
-	jsonData, err := ai.GenerateMessage(string(h.cnfg.PlanGenerator), string(encoded), 1800)
+	jsonData, err := ai.GenerateMessage(string(h.cnfg.PlanGenerator), string(encoded), 4096)
 	if err != nil {
 		return nil, err
 	}
