@@ -67,7 +67,16 @@ export function setMainButton(text: string, onClick: () => void): () => void {
 }
 
 export function haptic(type: "success" | "error" | "warning") {
-  // The Telegram WebApp API exposes haptic feedback on supported platforms.
-  (webapp() as unknown as { HapticFeedback?: { impactOccurred: (s: string) => void } })
-    ?.HapticFeedback?.impactOccurred?.(type);
+  // Notification outcomes and impact styles are separate Telegram methods.
+  // Haptics must never prevent the action (for example, selecting a date).
+  try {
+    const feedback = (webapp() as unknown as {
+      HapticFeedback?: {
+        notificationOccurred?: (kind: "error" | "success" | "warning") => void;
+      };
+    })?.HapticFeedback;
+    feedback?.notificationOccurred?.(type);
+  } catch {
+    // Unsupported Telegram clients can ignore haptic feedback.
+  }
 }

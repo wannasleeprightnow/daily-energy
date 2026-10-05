@@ -225,7 +225,7 @@ export function AddEntrySheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 left-1/2 z-20 flex w-full max-w-app -translate-x-1/2 flex-col overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24">
+    <div className="fixed inset-0 z-40 mx-auto flex w-full max-w-app min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24">
       <header className="mb-5 flex min-h-10 items-center gap-2">
         <button
           type="button"

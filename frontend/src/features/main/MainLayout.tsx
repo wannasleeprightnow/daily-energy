@@ -31,7 +31,7 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
   const [date, month] = formatDateWithMonth().split(" ");
 
   return (
-    <AppShell className="pb-20">
+    <AppShell className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
       {planError && (
         <div className="mx-5 mt-4 min-w-0 max-w-full rounded-card bg-[#272727] p-4 text-on" role="alert">
           <p className="break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>

@@ -21,7 +21,7 @@ export function TabBar({ left, center, right, className }: TabBarProps) {
   return (
     <nav
       className={clsx(
-        "fixed bottom-0 left-1/2 z-30 grid w-full max-w-app -translate-x-1/2 grid-cols-3 items-center",
+        "fixed inset-x-0 bottom-0 z-30 mx-auto grid w-full max-w-app grid-cols-3 items-center",
         "border-t border-white/5 bg-[#212121] px-5 pt-3",
         className,
       )}

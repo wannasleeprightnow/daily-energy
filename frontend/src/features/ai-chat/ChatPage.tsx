@@ -40,6 +40,7 @@ export function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [retryText, setRetryText] = useState<string | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const idRef = useRef(1);
   const socketRef = useRef<WebSocket | null>(null);
@@ -128,7 +129,7 @@ export function ChatPage() {
       socketRef.current = null;
       socket?.close(1000, "component unmounted");
     };
-  }, []);
+  }, [connectionAttempt]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: 999999, behavior: "smooth" });
@@ -199,8 +200,26 @@ export function ChatPage() {
         <span className="block text-[25px] font-medium leading-none text-on">Daily Energy</span>
       </header>
 
+      {connectionState !== "connected" && (
+        <div className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3">
+          <p className="text-[14px] leading-5 text-on" role="status">
+            {connectionState === "connecting"
+              ? "Подключаю чат…"
+              : connectionState === "reconnecting"
+                ? "Связь с чатом потеряна. Переподключаюсь…"
+                : "Нет соединения с чатом."}
+          </p>
+          <Button
+            onClick={() => setConnectionAttempt((attempt) => attempt + 1)}
+            className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+          >
+            Переподключить
+          </Button>
+        </div>
+      )}
+
       {!hasMessages && (
-        <section className="mx-auto mt-[150px] w-[76%] shrink-0">
+        <section className="mx-auto flex w-[76%] flex-1 flex-col justify-center">
           <h1 className="text-center text-[24px] font-medium leading-[30px] text-accent">
             Привет, {userName}!
           </h1>

@@ -42,10 +42,21 @@ export function WheelColumn<T extends string | number>({
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [windowStart, setWindowStart] = useState(0);
   const startY = useRef(0);
   const startOffset = useRef(0);
 
   const rowHeight = 35;
+  const visibleRows = 7;
+  const maxWindowStart = Math.max(0, values.length - visibleRows);
+
+  const updateWindow = (scrollTop: number) => {
+    const nextStart = Math.max(
+      0,
+      Math.min(maxWindowStart, Math.floor(scrollTop / rowHeight) - 1),
+    );
+    setWindowStart((current) => current === nextStart ? current : nextStart);
+  };
 
   const scrollToIndex = useCallback(
     (index: number) => {
@@ -53,6 +64,7 @@ export function WheelColumn<T extends string | number>({
       if (!el) return;
       const top = (index - 1) * rowHeight;
       el.scrollTo({ top, behavior: "smooth" });
+      updateWindow(top);
     },
     [rowHeight],
   );
@@ -73,6 +85,7 @@ export function WheelColumn<T extends string | number>({
     const el = viewportRef.current;
     if (!el) return;
     el.scrollTop = startOffset.current - (e.clientY - startY.current);
+    updateWindow(el.scrollTop);
   };
 
   const handlePointerUp = () => {
@@ -96,6 +109,7 @@ export function WheelColumn<T extends string | number>({
     return (
       <div
         key={String(value)}
+        id={`wheel-${ariaLabel}-${index}`}
         role="option"
         aria-selected={distance === 0}
         tabIndex={0}
@@ -140,7 +154,14 @@ export function WheelColumn<T extends string | number>({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {values.map((v, i) => renderRow(v, i))}
+        <div aria-hidden="true" style={{ height: windowStart * rowHeight }} />
+        {values.slice(windowStart, windowStart + visibleRows).map((v, offset) =>
+          renderRow(v, windowStart + offset),
+        )}
+        <div
+          aria-hidden="true"
+          style={{ height: Math.max(0, values.length - windowStart - visibleRows) * rowHeight }}
+        />
       </div>
     </div>
   );

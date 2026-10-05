@@ -49,7 +49,6 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
       month: date.getMonth(),
       day: date.getDate(),
     });
-    haptic("success");
     // Past or today -> history; future -> plan (matches the day-content modes).
     const isPast =
       date.getTime() <
@@ -57,6 +56,7 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
     const mode: "history" | "plan" = isPast ? "history" : "plan";
     writeDayPick(utgid, date, mode);
     void navigate(`/${mode}/food`);
+    haptic("success");
   };
 
   return (
