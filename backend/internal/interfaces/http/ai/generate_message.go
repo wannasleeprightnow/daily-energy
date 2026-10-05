@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-const ModelName = "nvidia/nemotron-3-ultra-550b-a55b:free"
+const ModelName = "z-ai/glm-5.3-flash"
 
 func GenerateMessage(systemPrompt string, userPrompt string, maxTokens ...int) ([]byte, error) {
 	requestBody := ChatRequest{

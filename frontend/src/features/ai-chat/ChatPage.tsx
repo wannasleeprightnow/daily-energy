@@ -3,7 +3,7 @@ import { Button } from "@/ui";
 import { useUser } from "@/hooks/useUser";
 import { getInitData, getTgUser } from "@/lib/telegram";
 import { API_URL } from "@/constants";
-import logo from "@/assets/icons/daily-energy-logo.svg";
+import logo from "@/assets/logo.png";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
