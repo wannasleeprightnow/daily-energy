@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/spf13/viper"
 )
@@ -18,7 +17,7 @@ type Config struct {
 	DBPassword       string `mapstructure:"DB_PASSWORD"`
 	DBName           string `mapstructure:"DB_NAME"`
 	TelegramBotToken string `mapstructure:"TELEGRAM_BOT_TOKEN"`
-	MockTelegramAuth bool   `mapstructure:"MOCK_TELEGRAM_AUTH"`
+	MiniAppURL        string `mapstructure:"MINI_APP_URL"`
 	ApiPath          string `mapstructure:"API_PATH"`
 	ApiKey           string `mapstructure:"API_KEY"`
 	AllowOrigins     string `mapstructure:"ALLOW_ORIGINS"`
@@ -32,19 +31,24 @@ func LoadConfig() (Config, error) {
 	var c Config
 
 	viper.AutomaticEnv()
+	for _, key := range []string{
+		"DEBUG", "DB_HOST", "DB_PORT", "DB_USERNAME", "DB_PASSWORD", "DB_NAME",
+		"TELEGRAM_BOT_TOKEN", "MINI_APP_URL", "API_PATH", "API_KEY", "ALLOW_ORIGINS",
+	} {
+		if err := viper.BindEnv(key); err != nil {
+			return c, fmt.Errorf("unable to bind %s: %w", key, err)
+		}
+	}
 
 	err := viper.Unmarshal(&c)
 	if err != nil {
 		return c, fmt.Errorf("unable to decode into struct: %v", err)
 	}
-	if mockAuth, ok := os.LookupEnv("MOCK_TELEGRAM_AUTH"); ok {
-		c.MockTelegramAuth, err = strconv.ParseBool(mockAuth)
-		if err != nil {
-			return c, fmt.Errorf("invalid MOCK_TELEGRAM_AUTH value: %v", err)
-		}
-	}
 	if apiKey, ok := os.LookupEnv("API_KEY"); ok {
 		c.ApiKey = apiKey
+	}
+	if miniAppURL, ok := os.LookupEnv("MINI_APP_URL"); ok {
+		c.MiniAppURL = miniAppURL
 	}
 	c.TelegramApiUrl = fmt.Sprintf("https://api.telegram.org/bot%s", c.TelegramBotToken)
 

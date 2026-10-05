@@ -2,7 +2,7 @@ package bot
 
 type Update struct {
 	UpdateID int `json:"update_id"`
-	Message  struct {
+	Message  *struct {
 		Text string `json:"text"`
 		Chat struct {
 			ID int64 `json:"id"`

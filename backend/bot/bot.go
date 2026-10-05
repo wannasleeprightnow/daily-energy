@@ -4,13 +4,35 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/isiyar/daily-energy/backend/config"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/isiyar/daily-energy/backend/config"
 )
 
 var offset int
+
+func telegramRequest(c *config.Config, method string, payload interface{}) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	resp, err := http.Post(
+		fmt.Sprintf("%s/%s", c.TelegramApiUrl, method),
+		"application/json",
+		bytes.NewReader(data),
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("Telegram %s returned %s", method, resp.Status)
+	}
+	return nil
+}
 
 func getUpdates(c *config.Config) ([]Update, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/getUpdates?timeout=10&offset=%d", c.TelegramApiUrl, offset))
@@ -18,7 +40,7 @@ func getUpdates(c *config.Config) ([]Update, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	var result struct {
 		OK     bool     `json:"ok"`
@@ -30,18 +52,18 @@ func getUpdates(c *config.Config) ([]Update, error) {
 	return result.Result, nil
 }
 
-func sendMessage(chatID int64, text string, c *config.Config) error {
-	payload := map[string]interface{}{
-		"chat_id":    chatID,
-		"text":       text,
-		"parse_mode": "HTML",
-	}
-	data, _ := json.Marshal(payload)
-	_, err := http.Post(fmt.Sprintf("%s/sendMessage", c.TelegramApiUrl), "application/json", bytes.NewReader(data))
-	return err
-}
-
 func RunBot(c *config.Config) {
+	if strings.TrimSpace(c.MiniAppURL) != "" {
+		if err := telegramRequest(c, "setChatMenuButton", map[string]interface{}{
+			"menu_button": map[string]interface{}{
+				"type": "web_app",
+				"text": "Открыть Daily Energy",
+				"web_app": map[string]string{"url": c.MiniAppURL},
+			},
+		}); err != nil {
+			fmt.Println("Bot menu button error:", err)
+		}
+	}
 	for {
 		updates, err := getUpdates(c)
 		if err != nil {
@@ -51,7 +73,21 @@ func RunBot(c *config.Config) {
 		}
 		for _, update := range updates {
 			offset = update.UpdateID + 1
-			err := sendMessage(update.Message.Chat.ID, "Привет! \nЭто тг-бот для входа в приложение Daily Energy. \n\nDaily Energy поможет тебе добиться желаемого результата в контроле веса и других физических показателей. \n\nЧтобы зайти в приложение, нажми <a href=\"https://t.me/latest_daily_energy_bot./DailyEnergy\">сюда</a> или на кнопку слева внизу чата", c)
+			if update.Message == nil {
+				continue
+			}
+			payload := map[string]interface{}{
+				"chat_id": update.Message.Chat.ID,
+				"text": "Привет! Daily Energy поможет отслеживать питание, активность и прогресс.",
+			}
+			if c.MiniAppURL != "" {
+				payload["reply_markup"] = map[string]interface{}{
+					"inline_keyboard": [][]map[string]interface{}{{
+						{"text": "Открыть Daily Energy", "web_app": map[string]string{"url": c.MiniAppURL}},
+					}},
+				}
+			}
+			err := telegramRequest(c, "sendMessage", payload)
 			if err != nil {
 				fmt.Println("Bot error:", err)
 			}

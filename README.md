@@ -30,9 +30,9 @@ make up
 
 Откройте frontend: [http://localhost:5173](http://localhost:5173). Backend API и Swagger UI доступны по адресам [http://localhost:8080/api/ping](http://localhost:8080/api/ping) и [http://localhost:8080/api/docs](http://localhost:8080/api/docs).
 
-Конфигуратор создаёт `.env` из `example.env`, если файла ещё нет, и записывает выбранные настройки запуска. Для AI-функций укажите `API_KEY` в `.env` до запуска. Локальная база использует отдельный volume `postgres-dev-data` и значения подключения, заданные в Docker Compose.
+Конфигуратор создаёт `.env` из `.env.example`, если файла ещё нет, и записывает выбранные настройки запуска. Для AI-функций укажите `API_KEY` в `.env` до запуска. Локальная база использует отдельный volume `postgres-dev-data` и значения подключения, заданные в Docker Compose.
 
-В режиме `full` работает Telegram-мок: frontend подменяет Telegram WebApp в обычном браузере, а локальный backend принимает его тестового пользователя. Мок относится только к Telegram-окружению и проверке Telegram-подписи. Запросы пользователей, планы, история и AI-функции обрабатываются настоящими backend-обработчиками; данные сохраняются в локальной PostgreSQL.
+Авторизация API всегда проверяет криптографическую подпись настоящего `initData` Telegram. В обычном браузере API-запросы, требующие пользователя, будут возвращать `401`.
 
 ### Только backend
 
@@ -43,7 +43,7 @@ make configure-dev
 make up
 ```
 
-Swagger UI: [http://localhost:8080/api/docs](http://localhost:8080/api/docs). Для вызовов защищённых API из Swagger включён локальный Telegram auth mock и назначается ID `777000`.
+Swagger UI: [http://localhost:8080/api/docs](http://localhost:8080/api/docs). Защищённые API требуют настоящего `initData` из Mini App, запущенного в Telegram.
 
 ### Запуск frontend отдельно
 
@@ -55,35 +55,46 @@ npm install
 npm run dev
 ```
 
-Vite доступен на [http://localhost:5174](http://localhost:5174) и использует корневой `.env`, созданный конфигуратором. Telegram-мок включён в режимах `dev` и `full`. Изменения frontend применяются автоматически.
+Vite доступен на [http://localhost:5174](http://localhost:5174) и использует корневой `.env`, созданный конфигуратором. Изменения frontend применяются автоматически. Авторизованные запросы проверяйте из Mini App, открытого через Telegram.
 
 ## Настройки окружения
 
-Основные настройки находятся в корневом `.env`; шаблон — [`example.env`](example.env). Конфигураторы `make configure-*` не перезаписывают API-ключи и настройки базы, а обновляют только параметры выбранного режима.
+Основные настройки находятся в корневом `.env`; шаблон — [`.env.example`](.env.example). Скопируйте его в `.env` и заполните значения. Конфигураторы `make configure-*` создают `.env` из `.env.example`, если файла ещё нет; существующие секреты и настройки базы они не перезаписывают.
 
 | Переменная | Назначение |
 | --- | --- |
 | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME` | Подключение backend к PostgreSQL; в локальных режимах значения базы задаёт Docker Compose. |
-| `TELEGRAM_BOT_TOKEN` | Проверка подписи Telegram `initData` в production и запуск Telegram-бота. В локальных режимах auth mock включён отдельно в Docker Compose. |
+| `TELEGRAM_BOT_TOKEN` | Токен бота; используется для проверки `initData` и работы бота. |
+| `MINI_APP_URL` | HTTPS URL Mini App, например `https://app.example.com/`. Используется кнопкой бота и кнопкой меню. |
+| `CERTBOT_EMAIL` | Email для регистрации сертификата Let's Encrypt. |
 | `API_PATH` | URL endpoint AI API. В шаблоне указан OpenRouter Chat Completions endpoint. |
 | `API_KEY` | Ключ AI API; нужен для расчёта калорий, генерации планов и чата. |
 | `ALLOW_ORIGINS` | Разрешённые origin для HTTP API. |
 | `SERVER_NAME` | Домен production-конфигурации Nginx. |
-| `VITE_API_URL` | Базовый URL backend для frontend. В локальных режимах конфигуратор указывает `http://localhost:8080`; пустое значение использует production URL из `frontend/src/constants.ts`. |
-| `VITE_MOCK_TELEGRAM` | Включает frontend-мок Telegram WebApp (`true` в локальных режимах, `false` в production). |
+| `VITE_API_URL` | Базовый URL backend для frontend. В локальных режимах конфигуратор указывает `http://localhost:8080`; пустое значение использует тот же HTTPS origin, через который открыт Mini App. |
 
 Сейчас используется модель `nvidia/nemotron-3-ultra-550b-a55b:free`; её имя задано в `backend/internal/interfaces/http/ai/generate_message.go`. Поменять endpoint можно через `API_PATH`, а ключ храните только в `.env` и не добавляйте в репозиторий.
 
 ## Production
 
-Production-профиль использует опубликованные Docker-образы, PostgreSQL и Nginx с HTTPS. Укажите production-значения `DB_*`, `TELEGRAM_BOT_TOKEN`, `API_KEY`, `DOCKER_USERNAME`, `TAG`, `SERVER_NAME` и другие необходимые параметры в `.env`, затем выполните:
+Production-профиль использует опубликованные Docker-образы, PostgreSQL и Nginx. Nginx принимает HTTP-01 challenge, certbot получает сертификат и обновляет его каждые 12 часов; Nginx замечает первый сертификат и регулярно перечитывает файлы после продления.
+
+На сервере заранее направьте A/AAAA записи `SERVER_NAME` на его публичный IP, разрешите входящие TCP 80 и 443 и установите Docker Compose v2. Укажите в `.env` `DB_*`, `TELEGRAM_BOT_TOKEN`, `MINI_APP_URL` (например `https://app.example.com/`), `CERTBOT_EMAIL`, `API_KEY`, `DOCKER_USERNAME`, `TAG` и `SERVER_NAME`. `MINI_APP_URL` должен совпадать с доменом, на который выпущен сертификат. Затем запустите:
 
 ```bash
 make configure-prod
 make up
 ```
 
-В production Telegram-мок отключён, а backend проверяет подпись `initData`. AI-запросы идут к реальному endpoint, заданному `API_PATH`.
+Первый запуск может занять несколько минут: пока Let's Encrypt проверяет домен, Nginx отдаёт HTTP challenge и страницу ожидания. Когда сертификат будет создан, Nginx автоматически переключится на HTTPS. Снаружи frontend, API и WebSocket доступны только через Nginx на портах 80/443; API использует относительный путь `/api`.
+
+### Привязка Mini App к боту
+
+1. Создайте бота через [@BotFather](https://t.me/BotFather) командой `/newbot`, затем добавьте выданный токен в `TELEGRAM_BOT_TOKEN`.
+2. Откройте `/mybots` → ваш бот → **Bot Settings** → **Configure Mini App** и задайте Main Mini App URL `https://app.example.com/`. Main Mini App добавит кнопку запуска в профиль бота и позволит открывать приложение прямой ссылкой `https://t.me/<имя_бота>?startapp`.
+3. Укажите тот же полный URL в `MINI_APP_URL`. Backend сам установит кнопку меню бота через `setChatMenuButton` и будет отвечать на сообщения кнопкой **Открыть Daily Energy**. После запуска production-стека проверьте обе кнопки в Telegram.
+
+Дополнительно BotFather позволяет настроить меню командой `/setmenubutton`; для этого проекта она не нужна, потому что backend устанавливает URL кнопки меню из `MINI_APP_URL`. Telegram передаёт приложению подписанный `initData`, который backend проверяет по токену бота. Подробнее о способах запуска — в [официальной документации Telegram Mini Apps](https://core.telegram.org/bots/webapps).
 
 Перед переключением между профилями остановите предыдущий стек:
 
@@ -118,12 +129,6 @@ make stop
 | `make restart` | Перезапустить сервисы активного профиля. |
 | `make stop` | Остановить сервисы, сохранив volumes. |
 | `make down` | Остановить сервисы и удалить volumes активного профиля. |
-
-## Telegram-мок
-
-`frontend/src/dev/telegramMock.ts` подменяет объект `window.Telegram.WebApp` в обычном браузере, чтобы локально разрабатывать интерфейс Mini App. Мок предоставляет тестовый профиль с ID `777000` и используется только при `VITE_MOCK_TELEGRAM=true`.
-
-В локальных профилях Compose отключает проверку Telegram-подписи и назначает запросам тестовый ID `777000`, чтобы Telegram-мок мог обращаться к локальному API. В production этот режим выключен: backend проверяет подпись настоящего `initData`. Ответы API, данные и AI-функции не подменяются.
 
 ## Технологии
 

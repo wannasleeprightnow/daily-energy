@@ -3,8 +3,6 @@
 interface ImportMetaEnv {
 	/** Backend base URL (overrides the default in constants.ts). */
 	readonly VITE_API_URL?: string;
-	/** When "true" the dev-only Telegram WebApp mock is installed. */
-	readonly VITE_MOCK_TELEGRAM?: string;
 }
 
 interface ImportMeta {

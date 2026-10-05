@@ -30,7 +30,7 @@ help:
 	@echo "  make configure        Интерактивное меню выбора режима"
 	@echo "  make configure-prod   Режим 'prod' (без меню)"
 	@echo "  make configure-dev    Режим 'dev' — только бэкенд"
-	@echo "  make configure-full   Режим 'dev-full' — локальный API + фронтенд (мок Telegram)"
+	@echo "  make configure-full   Режим 'dev-full' — локальный API + фронтенд"
 	@echo ""
 	@echo "  make up               Запустить стек текущего режима (build + up)"
 	@echo "  make down             Остановить стек и удалить тома"

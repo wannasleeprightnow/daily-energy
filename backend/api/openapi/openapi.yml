@@ -8,8 +8,8 @@ info:
 servers:
   - url: http://localhost:8080/
     description: Локальный сервер разработки
-  - url: https://test-srvr.ru/
-    description: Продакшн сервер
+  - url: /
+    description: Production через Nginx на домене текущего Mini App
 
 tags:
   - name: system
@@ -610,7 +610,7 @@ components:
       type: apiKey
       in: header
       name: initData
-      description: В локальных профилях Telegram auth mock назначает тестовый ID 777000; в production передавайте настоящее initData из Telegram.
+      description: Передавайте настоящее initData из Telegram Mini App.
   schemas:
     UserResponse:
       type: object

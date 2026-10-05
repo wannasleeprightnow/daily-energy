@@ -38,7 +38,7 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 	})
 	r.GET("/ping", handler.PingHandler)
 
-	users := r.Group("/users", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth))
+	users := r.Group("/users", handler.TelegramAuthMiddleware(c.TelegramBotToken))
 	{
 		users.POST("", h.User.CreateUser)
 		users.GET("/:utgid", h.User.GetUser)
@@ -58,18 +58,18 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 		}
 	}
 
-	actions := r.Group("/actions", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth))
+	actions := r.Group("/actions", handler.TelegramAuthMiddleware(c.TelegramBotToken))
 	{
 		actions.GET("/:id", h.Action.GetAction)
 	}
 
-	ai := r.Group("/ai", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth))
+	ai := r.Group("/ai", handler.TelegramAuthMiddleware(c.TelegramBotToken))
 	{
 		ai.POST("/calories", h.Ai.CalculationCalories)
 		ai.POST("/activity-calories", h.Ai.CalculationActivityCalories)
 	}
 
-	r.GET("/ws/chat", handler.TelegramAuthMiddleware(c.TelegramBotToken, c.MockTelegramAuth), h.Chat.HandleChat)
+	r.GET("/ws/chat", handler.TelegramAuthMiddleware(c.TelegramBotToken), h.Chat.HandleChat)
 }
 
 func mustReadOpenAPI() []byte {

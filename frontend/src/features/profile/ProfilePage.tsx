@@ -7,7 +7,6 @@ import { useActions } from "@/hooks/useActions";
 import { useUser, useWeightHistory } from "@/hooks/useUser";
 import { dayRange, formatFullDate, formatShortDate, nowStartOfDay } from "@/lib/dates";
 import { getTgUser } from "@/lib/telegram";
-import mockAvatar from "@/assets/telegram-avatar-mock.svg";
 import { GOAL_LABEL, ACTIVITY_LABEL } from "./labels";
 
 interface ProfilePageProps {
@@ -22,7 +21,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
   const navigate = useNavigate();
   const { data: user, isLoading } = useUser(utgid);
   const { data: history } = useWeightHistory(utgid);
-  const telegramAvatar = getTgUser()?.photo_url?.trim() || mockAvatar;
+  const telegramAvatar = getTgUser()?.photo_url?.trim();
   const calorieRange = useMemo(() => {
     const today = nowStartOfDay();
     const start = new Date(today);
@@ -85,14 +84,20 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
       {/* Profile card */}
       <section className="mt-5 rounded-card bg-[#272727] p-4">
         <div className="flex items-center gap-3">
-          <img
-            src={telegramAvatar}
-            alt="Аватар пользователя"
-            className="h-12 w-12 shrink-0 rounded-full object-cover"
-            onError={(event) => {
-              event.currentTarget.src = mockAvatar;
-            }}
-          />
+          {telegramAvatar ? (
+            <img
+              src={telegramAvatar}
+              alt="Аватар пользователя"
+              className="h-12 w-12 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              aria-label="Аватар пользователя"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#383838] text-lg font-medium text-on"
+            >
+              {user.name.trim().charAt(0).toLocaleUpperCase() || "?"}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-[24px] font-medium text-on">{user.name}</p>
           </div>

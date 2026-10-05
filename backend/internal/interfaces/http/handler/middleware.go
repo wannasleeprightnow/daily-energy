@@ -9,14 +9,8 @@ import (
 	"strings"
 )
 
-func TelegramAuthMiddleware(botToken string, allowMock bool) gin.HandlerFunc {
+func TelegramAuthMiddleware(botToken string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if allowMock {
-			c.Set("utgid", "777000")
-			c.Next()
-			return
-		}
-
 		initData := c.GetHeader("initData")
 		if initData == "" && c.IsWebsocket() {
 			for _, protocol := range strings.Split(c.GetHeader("Sec-WebSocket-Protocol"), ",") {
