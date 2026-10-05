@@ -6,8 +6,9 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
+	Model     string    `json:"model"`
+	MaxTokens int       `json:"max_tokens,omitempty"`
+	Messages  []Message `json:"messages"`
 }
 
 type APIResponse struct {

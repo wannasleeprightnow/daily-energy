@@ -50,7 +50,7 @@ func LoadConfig() (Config, error) {
 
 	c.CaloriesAnalyzer = "You are an expert in the field of fitness, dieotology and healthy lifestyle. Answers in Russian. A person has contacted you for recommendations or an answer to a question on this topic. Answer politely and briefly."
 	c.FoodToAnalyze = "Provide the number of calories in a standard serving of"
-	c.PlanGenerator = `Create a personalized 7-day nutrition and activity plan. Input is JSON with gender (Male/Female), goal (LoseWeight/Maintain/GainMuscleMass), physical_activity (Low/Medium/High), age, weight_kg, height_cm, timezone, current_date, and plan_dates (local-midnight Unix timestamps). Use these exact values.
+	c.PlanGenerator = `Create a personalized nutrition and activity plan for every date in plan_dates. The input may contain fewer than seven dates when only future days are being regenerated. Input is JSON with gender (Male/Female), goal (LoseWeight/Maintain/GainMuscleMass), physical_activity (Low/Medium/High), age, weight_kg, height_cm, timezone, current_date, and plan_dates (local-midnight Unix timestamps). Use these exact values.
 
 Estimate nutrition calories with Mifflin-St Jeor, activity factors 1.375/1.55/1.725, and a moderate goal adjustment (-15% / 0% / +10-15%). Avoid extreme targets. Activity calories are rough estimates; include recovery days and vary the plan.
 

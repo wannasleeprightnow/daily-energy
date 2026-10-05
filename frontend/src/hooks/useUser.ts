@@ -126,6 +126,11 @@ export function useUpdateUser(utgid: number) {
 
       return updatedUser;
     },
+    onSuccess: (updatedUser) => {
+      // Publish the saved profile immediately so plan generation starts with
+      // the new profile before the user returns to a plan screen.
+      qc.setQueryData(queryKeys.user(utgid), updatedUser);
+    },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.user(utgid) });
       void qc.invalidateQueries({ queryKey: queryKeys.weightHistory(utgid) });

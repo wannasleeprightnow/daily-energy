@@ -73,7 +73,7 @@ export async function createPlan(
   const { data } = await http.post<PlanResponse[]>(
     `/api/users/${utgid}/plans`,
     plan,
-    { timeout: 100_000 },
+    { timeout: 170_000 },
   );
   return data;
 }

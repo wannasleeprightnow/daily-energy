@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 )
 
 const planHorizonDays = 7
+const planGenerationAttempts = 2
 
 type planGenerationInput struct {
 	Gender           models.Gender           `json:"gender"`
@@ -146,7 +148,7 @@ func (h *PlanHandler) ensurePlan(ctx context.Context, user models.User, timezone
 			}
 		}
 	}
-	generated, err := h.generatePlan(user, timezone, localNow, targetDates)
+	generated, err := h.generatePlan(ctx, user, timezone, localNow, targetDates)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +206,30 @@ func profileHash(user models.User, localNow time.Time, timezone string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func (h *PlanHandler) generatePlan(user models.User, timezone string, localNow time.Time, dates []time.Time) ([]models.Plan, error) {
+func (h *PlanHandler) generatePlan(ctx context.Context, user models.User, timezone string, localNow time.Time, dates []time.Time) ([]models.Plan, error) {
+	for attempt := 1; attempt <= planGenerationAttempts; attempt++ {
+		plans, err := h.generatePlanOnce(ctx, user, timezone, localNow, dates)
+		if err == nil {
+			return plans, nil
+		}
+		if !errors.Is(err, ai.ErrNoChoices) || attempt == planGenerationAttempts {
+			return nil, err
+		}
+		// Some free AI providers occasionally return an empty choices array. Retry
+		// once before surfacing the failure; no plan rows are written until a
+		// complete response has been validated.
+		timer := time.NewTimer(500 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return nil, ai.ErrNoChoices
+}
+
+func (h *PlanHandler) generatePlanOnce(ctx context.Context, user models.User, timezone string, localNow time.Time, dates []time.Time) ([]models.Plan, error) {
 	input := planGenerationInput{
 		Gender: user.Gender, DateOfBirth: user.DateofBirth, WeightKg: user.Weight,
 		HeightCm: user.Height, Goal: user.Goal, PhysicalActivity: user.PhysicalActivity,
@@ -224,7 +249,7 @@ func (h *PlanHandler) generatePlan(user models.User, timezone string, localNow t
 	if err != nil {
 		return nil, err
 	}
-	jsonData, err := ai.GenerateMessage(string(h.cnfg.PlanGenerator), string(encoded))
+	jsonData, err := ai.GenerateMessage(string(h.cnfg.PlanGenerator), string(encoded), 1800)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +257,8 @@ func (h *PlanHandler) generatePlan(user models.User, timezone string, localNow t
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{Timeout: 90 * time.Second}
+	request = request.WithContext(ctx)
+	client := &http.Client{Timeout: 150 * time.Second}
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
@@ -243,7 +269,7 @@ func (h *PlanHandler) generatePlan(user models.User, timezone string, localNow t
 		return nil, err
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, fmt.Errorf("AI API returned status %d", response.StatusCode)
+		return nil, fmt.Errorf("AI API returned status %d: %s", response.StatusCode, providerErrorMessage(body))
 	}
 	var aiResponse ai.APIResponse
 	if err := ai.Deserialization(body, &aiResponse); err != nil {
@@ -277,4 +303,16 @@ func (h *PlanHandler) generatePlan(user models.User, timezone string, localNow t
 		plans = append(plans, models.Plan{Id: uuid.NewString(), Utgid: user.Utgid, Date: date, CaloriesToBurn: daily.Calories, Recommendation: strings.Join(daily.Recommendations, "\n"), Type: models.Activity})
 	}
 	return plans, nil
+}
+
+func providerErrorMessage(body []byte) string {
+	var response struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &response); err == nil && response.Error.Message != "" {
+		return response.Error.Message
+	}
+	return "unexpected response from provider"
 }

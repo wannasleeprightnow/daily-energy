@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPlan, listPlans } from "@/api/plans";
 import type { ActionType, PlanRequest, PlanResponse } from "@/api/types";
+import { dayRange } from "@/lib/dates";
 
 export function planKeys(
   utgid: number,
@@ -53,8 +54,18 @@ export function useEnsurePlan(
     retry: false,
   });
   useEffect(() => {
-    if (query.isSuccess) {
-      void qc.invalidateQueries({ queryKey: ["plans", utgid] });
+    if (query.isSuccess && query.data) {
+      const grouped = new Map<string, { range: { start_at: number; finish_at: number }; type: ActionType; plans: PlanResponse[] }>();
+      for (const plan of query.data) {
+        const range = dayRange(new Date(plan.date * 1000));
+        const key = `${range.start_at}:${plan.type}`;
+        const group = grouped.get(key) ?? { range, type: plan.type, plans: [] };
+        group.plans.push(plan);
+        grouped.set(key, group);
+      }
+      for (const group of grouped.values()) {
+        qc.setQueryData(planKeys(utgid, group.range, group.type), group.plans);
+      }
     }
   }, [query.dataUpdatedAt, query.isSuccess, qc, utgid]);
   return query;
@@ -80,13 +91,12 @@ export function useIsRefreshingFuturePlan(utgid: number, profileKey: string) {
       query.queryKey[3] === localDate &&
       query.queryKey[4] === profileKey,
   );
-  const hasPreviousProfilePlan = cache.some(
+  const hasPreviousProfileQuery = cache.some(
     (query) =>
       query.queryKey[2] === timezone &&
-      query.queryKey[4] !== profileKey &&
-      query.state.status === "success",
+      query.queryKey[4] !== profileKey,
   );
   return Boolean(
-    isEnsuring && currentQuery?.state.fetchStatus === "fetching" && hasPreviousProfilePlan,
+    isEnsuring && currentQuery?.state.fetchStatus === "fetching" && hasPreviousProfileQuery,
   );
 }

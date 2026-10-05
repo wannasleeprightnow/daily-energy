@@ -6,7 +6,7 @@ import (
 
 const ModelName = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
-func GenerateMessage(systemPrompt string, userPrompt string) ([]byte, error) {
+func GenerateMessage(systemPrompt string, userPrompt string, maxTokens ...int) ([]byte, error) {
 	requestBody := ChatRequest{
 		Model: ModelName,
 		Messages: []Message{
@@ -19,6 +19,9 @@ func GenerateMessage(systemPrompt string, userPrompt string) ([]byte, error) {
 				Content: userPrompt,
 			},
 		},
+	}
+	if len(maxTokens) > 0 {
+		requestBody.MaxTokens = maxTokens[0]
 	}
 
 	jsonData, err := json.Marshal(requestBody)
