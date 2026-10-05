@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AppShell, NavItem, TabBar } from "@/ui";
+import { apiErrorMessage } from "@/api/client";
 import { formatDateWithMonth } from "@/lib/dates";
 import {
   CalendarIcon,
@@ -11,6 +12,8 @@ import {
 
 interface MainLayoutProps {
   utgid: number;
+  planError?: Error | null;
+  retryPlan: () => void;
 }
 
 /**
@@ -18,7 +21,7 @@ interface MainLayoutProps {
  * (Fig. `сегодня питание` frames). Navigation targets are provided by the
  * child routes; this layout only draws the persistent chrome.
  */
-export function MainLayout(_props: MainLayoutProps) {
+export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -29,6 +32,16 @@ export function MainLayout(_props: MainLayoutProps) {
 
   return (
     <AppShell className="pb-20">
+      {planError && (
+        <div className="mx-5 mt-4 min-w-0 max-w-full rounded-card bg-[#272727] p-4 text-on" role="alert">
+          <p className="break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
+            Не удалось подготовить план. {apiErrorMessage(planError)}
+          </p>
+          <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
+            Повторить
+          </button>
+        </div>
+      )}
       <Outlet />
 
       <TabBar

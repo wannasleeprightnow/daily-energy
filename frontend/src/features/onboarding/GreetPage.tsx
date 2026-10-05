@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { AppShell, Button, Text } from "@/ui";
 import { colors } from "@/design/tokens";
+import logo from "@/assets/logo.png";
 
 /**
  * Greeting / landing screen (Figma `25:3` "старт").
@@ -18,10 +19,11 @@ export function GreetPage({ showGo = true }: { showGo?: boolean }) {
       >
         {/* Logo */}
         <img
-          src="/src/assets/logo.png"
+          src={logo}
           alt="Daily Energy"
           width={168}
           height={168}
+          decoding="async"
           className="mb-8"
         />
 

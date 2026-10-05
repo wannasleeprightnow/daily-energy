@@ -24,6 +24,7 @@ export function setAuthHeader(initData: string): void {
 export function apiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { error?: string; details?: string } | undefined;
+    if (data?.error && data.details) return `${data.error}: ${data.details}`;
     if (data?.error) return data.error;
     if (data?.details) return data.details;
     return err.message;

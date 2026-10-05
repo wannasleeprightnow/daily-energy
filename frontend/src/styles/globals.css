@@ -8,7 +8,7 @@
 /* ------------------------------------------------------------------ */
 @font-face {
   font-family: "TT Firs Neue Trial Var";
-  src: url("/src/fonts/TT Firs Neue Trial Var Roman.ttf") format("truetype");
+  src: url("../fonts/TT Firs Neue Trial Var Roman.ttf") format("truetype");
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;

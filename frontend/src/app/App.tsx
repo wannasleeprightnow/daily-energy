@@ -24,7 +24,6 @@ import { ProfilePage } from "@/features/profile/ProfilePage";
 import { EditProfilePage } from "@/features/profile/EditProfilePage";
 import { CalendarPage } from "@/features/profile/CalendarPage";
 import { useEnsurePlan } from "@/hooks/usePlans";
-import { apiErrorMessage } from "@/api/client";
 
 function AppRoutes({
   utgid,
@@ -36,10 +35,8 @@ function AppRoutes({
   retryPlan: () => void;
 }) {
   return (
-    <>
-      {planError && <PlanError error={planError} retry={retryPlan} />}
       <Routes>
-        <Route element={<MainLayout utgid={utgid} />}>
+        <Route element={<MainLayout utgid={utgid} planError={planError} retryPlan={retryPlan} />}>
           <Route index element={<Navigate to="today/food" replace />} />
           <Route path="today/:kind" element={<TodayPage utgid={utgid} />} />
           <Route path="plan/:kind" element={<PlanPage utgid={utgid} />} />
@@ -51,20 +48,6 @@ function AppRoutes({
           <Route path="*" element={<Navigate to="today/food" replace />} />
         </Route>
       </Routes>
-    </>
-  );
-}
-
-function PlanError({ error, retry }: { error: Error; retry: () => void }) {
-  return (
-    <div className="mx-5 mt-4 rounded-card bg-[#272727] p-4 text-on" role="alert">
-      <p className="text-bodySm text-danger">
-        Не удалось подготовить план. {apiErrorMessage(error)}
-      </p>
-      <button type="button" onClick={retry} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
-        Повторить
-      </button>
-    </div>
   );
 }
 
