@@ -64,8 +64,8 @@ func validateInitData(params url.Values, botToken string) bool {
 	}
 	dataCheckString := strings.Join(lines, "\n")
 
-	secretMAC := hmac.New(sha256.New, []byte(botToken))
-	secretMAC.Write([]byte("WebAppData"))
+	secretMAC := hmac.New(sha256.New, []byte("WebAppData"))
+	secretMAC.Write([]byte(botToken))
 	dataMAC := hmac.New(sha256.New, secretMAC.Sum(nil))
 	dataMAC.Write([]byte(dataCheckString))
 	calculatedHash := fmt.Sprintf("%x", dataMAC.Sum(nil))
