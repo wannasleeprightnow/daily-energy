@@ -47,7 +47,6 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
     .filter((entry) => Number.isFinite(entry.date) && Number.isFinite(entry.weight))
     .slice()
     .sort((a, b) => a.date - b.date);
-  const bmi = user.weight / ((user.height / 100) ** 2);
   const measurementHistory = orderedHistory
     .filter((entry) => Number.isFinite(entry.height) && entry.height > 0)
     .map((entry) => ({
@@ -126,11 +125,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
       </section>
 
       <section className="mt-4 rounded-card bg-[#272727] p-4">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-[20px] font-medium text-on">Динамика ИМТ</h2>
-          <span className="shrink-0 text-[16px] font-medium text-accent">{bmi.toFixed(1)}</span>
-        </div>
-        <p className="mt-1 text-caption text-on/60">По тем же датам, что и вес</p>
+        <h2 className="text-[20px] font-medium text-on">Динамика ИМТ</h2>
         <TrendChart
           points={bmiPoints}
           unit=""
@@ -140,7 +135,6 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
 
       <section className="mt-4 rounded-card bg-[#272727] p-4">
         <h2 className="text-[20px] font-medium text-on">Динамика потребления калорий</h2>
-        <p className="mt-1 text-caption text-on/60">По дням · последние 7 дней</p>
         <DailyCaloriesChart
           days={dailyCalories}
           valueKey="food"
@@ -152,7 +146,6 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
 
       <section className="mt-4 rounded-card bg-[#272727] p-4">
         <h2 className="text-[20px] font-medium text-on">Динамика расхода калорий</h2>
-        <p className="mt-1 text-caption text-on/60">Активность · последние 7 дней</p>
         <DailyCaloriesChart
           days={dailyCalories}
           valueKey="activity"
@@ -194,7 +187,8 @@ function TrendChart({
 
   const values = points.map((point) => point.value);
   const actualMax = Math.max(...values);
-  const max = Math.max(actualMax, 1);
+  // Keep headroom so the value label stays visibly above the tallest bar.
+  const max = Math.max(actualMax * 1.2, 1);
   const chart = { width: 360, height: 174, left: 42, right: 354, top: 20, bottom: 136 };
   const barTop = chart.top + 20;
   const step = (chart.right - chart.left) / points.length;
@@ -231,7 +225,7 @@ function TrendChart({
             <title>{`${formatShortDate(point.date)}: ${formatValue(point.value)}`}</title>
             <text
               x={point.x + barWidth / 2}
-              y={chart.bottom - point.height - 5}
+              y={chart.bottom - point.height - 8}
               fill="#fff"
               fontSize="10"
               textAnchor="middle"
@@ -297,7 +291,9 @@ function DailyCaloriesChart({
   emptyMessage: string;
 }) {
   const values = days.map((day) => day[valueKey]);
-  const maxValue = Math.max(...values, 500);
+  const actualMax = Math.max(...values);
+  // Reserve 20% of the vertical range for labels above the tallest bar.
+  const maxValue = Math.max(Math.ceil(actualMax * 1.2), 500);
   const hasValues = values.some((value) => value > 0);
   const chart = { width: 360, height: 174, left: 38, right: 354, top: 20, bottom: 136 };
   const barTop = chart.top + 20;
@@ -306,10 +302,6 @@ function DailyCaloriesChart({
 
   return (
     <div className="mt-2">
-      <div className="flex items-center gap-2 text-caption text-on/70">
-        <span className="h-2.5 w-2.5 rounded-full bg-accent" />
-        {label}, ккал
-      </div>
       <svg
         viewBox={`0 0 ${chart.width} ${chart.height}`}
         role="img"
@@ -332,7 +324,7 @@ function DailyCaloriesChart({
               {value > 0 && (
                 <text
                   x={x + barWidth / 2}
-                  y={y - 5}
+                  y={y - 8}
                   fill="#fff"
                   fontSize="9"
                   textAnchor="middle"
