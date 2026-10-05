@@ -224,8 +224,7 @@ export function ChatPage() {
             Привет, {userName}!
           </h1>
           <p className="mt-2 text-center text-[13px] leading-[17px] text-on">
-            Меня зовут Рафик. Сюда ты можешь написать любые вопросы и внести
-            изменения в персональный план.
+            Меня зовут Рафик. Задавай любые вопросы!
           </p>
         </section>
       )}

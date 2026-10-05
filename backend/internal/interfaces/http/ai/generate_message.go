@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-const ModelName = "z-ai/glm-5.3-flash"
+const ModelName = "inception/mercury-2.5"
 
 func GenerateMessage(systemPrompt string, userPrompt string, maxTokens ...int) ([]byte, error) {
 	requestBody := ChatRequest{
