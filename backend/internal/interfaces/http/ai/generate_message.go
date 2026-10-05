@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-const ModelName = "stealth/space-bunny-alpha"
+const ModelName = "z-ai/glm-5.3-flash"
 
 func GenerateMessage(systemPrompt string, userPrompt string, maxTokens ...int) ([]byte, error) {
 	requestBody := ChatRequest{
