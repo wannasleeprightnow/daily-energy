@@ -51,7 +51,7 @@ func RunBot(c *config.Config) {
 		}
 		for _, update := range updates {
 			offset = update.UpdateID + 1
-			err := sendMessage(update.Message.Chat.ID, "Привет! \nЭто тг-бот для входа в приложение Daily Energy. \n\nDaily Energy поможет тебе добиться желаемого результата в контроле веса и других физических показателей. \n\nЧтобы зайти в приложение, нажми <a href=\"https://t.me/DailyEnergyApp_Bot/DailyEnergy\">сюда</a> или на кнопку слева внизу чата", c)
+			err := sendMessage(update.Message.Chat.ID, "Привет! \nЭто тг-бот для входа в приложение Daily Energy. \n\nDaily Energy поможет тебе добиться желаемого результата в контроле веса и других физических показателей. \n\nЧтобы зайти в приложение, нажми <a href=\"https://t.me/latest_daily_energy_bot./DailyEnergy\">сюда</a> или на кнопку слева внизу чата", c)
 			if err != nil {
 				fmt.Println("Bot error:", err)
 			}
