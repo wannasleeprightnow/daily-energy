@@ -5,6 +5,7 @@ import { useActions } from "@/hooks/useActions";
 import { useIsEnsuringPlan, useIsRefreshingFuturePlan, usePlans } from "@/hooks/usePlans";
 import { useUser } from "@/hooks/useUser";
 import calendarIcon from "@/assets/icons/calendar.svg";
+import foodIcon from "@/assets/icons/food.svg";
 import plusIcon from "@/assets/icons/plus.svg";
 import runningIcon from "@/assets/icons/running.svg";
 import {
@@ -105,7 +106,7 @@ export function DayContent({ utgid, mode }: DayContentProps) {
   const isActivity = activityType === "Activity";
 
   return (
-    <div className={`flex min-h-full flex-col pt-5 ${isActivity ? "px-6" : "px-5"}`}>
+    <div className="flex min-h-full flex-col px-6 pt-5">
       <DayHeader
         title={title}
         kind={activityType}
@@ -117,67 +118,44 @@ export function DayContent({ utgid, mode }: DayContentProps) {
         onCalendar={() => navigate("/calendar")}
       />
 
-      <div className={`mt-5 flex flex-1 flex-col gap-4 ${isActivity ? "pb-24" : ""}`}>
-        {isActivity ? (
-          <>
-            <section className="rounded-card bg-[#272727] p-[14px]">
-              {showPlanLoading ? (
-                <PlanLoading />
-              ) : (
-                <>
-                  <div className="flex items-center justify-around gap-3">
-                    <img
-                      src={runningIcon}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-[100px] w-[75px] object-contain"
-                    />
-                    <ProgressRingBlock
-                      remaining={remaining}
-                      target={target}
-                      isLoading={false}
-                      size={150}
-                      showConsumedProgress
-                    />
-                  </div>
-                  {recommendation && (
-                    <div className="mt-2">
-                      <AiAdviceCard large>{recommendation}</AiAdviceCard>
-                    </div>
-                  )}
-                </>
-              )}
-            </section>
-            <section className="rounded-card bg-[#272727] p-[14px]">
-              <HistorySection
-                actions={actions}
-                actionsLoading={actionsLoading}
-                onAdd={() => setAddOpen(true)}
-                compact
-              />
-            </section>
-          </>
-        ) : (
-          <>
-            <div className="rounded-card bg-[#272727] p-4">
-              {showPlanLoading ? (
-                <PlanLoading />
-              ) : (
-                <div className="flex items-center gap-4">
-                  <ProgressRingBlock remaining={remaining} target={target} isLoading={false} />
-                  <div className="min-w-0 flex-1">
-                    {recommendation && <AiAdviceCard>{recommendation}</AiAdviceCard>}
-                  </div>
+      <div className="mt-5 flex flex-1 flex-col gap-4 pb-24">
+        <section className="rounded-card bg-[#272727] p-[14px]">
+          {showPlanLoading ? (
+            <PlanLoading />
+          ) : (
+            <>
+              <div className="flex items-center justify-around gap-3">
+                <img
+                  src={isActivity ? runningIcon : foodIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className={isActivity ? "h-[100px] w-[75px] object-contain" : "h-[100px] w-[67px] object-contain"}
+                />
+                <ProgressRingBlock
+                  remaining={remaining}
+                  target={target}
+                  isLoading={false}
+                  size={isActivity ? 150 : 126}
+                  showConsumedProgress
+                  mutedProgress={!isActivity}
+                />
+              </div>
+              {recommendation && (
+                <div className="mt-2">
+                  <AiAdviceCard large>{recommendation}</AiAdviceCard>
                 </div>
               )}
-            </div>
-            <HistorySection
-              actions={actions}
-              actionsLoading={actionsLoading}
-              onAdd={() => setAddOpen(true)}
-            />
-          </>
-        )}
+            </>
+          )}
+        </section>
+        <section className="rounded-card bg-[#272727] p-[14px]">
+          <HistorySection
+            actions={actions}
+            actionsLoading={actionsLoading}
+            onAdd={() => setAddOpen(true)}
+            compact
+          />
+        </section>
       </div>
 
       <AddEntrySheet
@@ -219,7 +197,7 @@ function HistorySection({
       </div>
       <div
         className={compact ? "activity-history-scroll max-h-[220px] overflow-y-auto overscroll-contain pr-2" : ""}
-        aria-label={compact ? "Список активностей" : undefined}
+        aria-label={compact ? "История за день" : undefined}
       >
         {actionsLoading ? (
           <CardLoading />
@@ -244,8 +222,8 @@ function DayHeader({
 }) {
   return (
     <div>
-      <div className={`mb-4 flex items-start justify-between ${kind === "Activity" ? "gap-3" : ""}`}>
-        <h1 className={kind === "Activity" ? "max-w-[260px] text-[32px] font-medium leading-[37px] text-on" : "text-h1 text-on"}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h1 className="max-w-[260px] text-[32px] font-medium leading-[37px] text-on">
           {title}
         </h1>
         <button
@@ -283,9 +261,7 @@ function ToggleTabs({
           onClick={() => onChange(it.value)}
           className={`min-h-11 rounded-card px-[18px] text-[18px] font-medium transition-colors ${
             value === it.value
-              ? it.value === "Activity"
-                ? "bg-[#303030] text-on ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
-                : "bg-accent text-on"
+              ? "bg-[#303030] text-on ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
               : "bg-transparent text-on"
           }`}
         >

@@ -56,17 +56,25 @@ export function ProgressRingBlock({
   isLoading,
   size = 126,
   showConsumedProgress = false,
+  mutedProgress = false,
 }: {
   remaining: number | null;
   target: number | null;
   isLoading: boolean;
   size?: number;
   showConsumedProgress?: boolean;
+  mutedProgress?: boolean;
 }) {
   const fraction = remaining === null || !target ? 0 : remaining / target;
   const progress = Math.max(0, Math.min(1, showConsumedProgress ? 1 - fraction : fraction));
   return (
-    <ProgressRing progress={progress} size={size} thickness={6} lowerLabel={showConsumedProgress}>
+    <ProgressRing
+      progress={progress}
+      size={size}
+      thickness={6}
+      lowerLabel={showConsumedProgress}
+      mutedProgress={mutedProgress}
+    >
       <span className={`text-center text-on/90 ${size < 120 ? "text-[13px] leading-[15px]" : size >= 130 ? "text-[18px] leading-[21px]" : "text-[15px] leading-[19px]"}`}>
         {isLoading ? (
           "Загрузка…"

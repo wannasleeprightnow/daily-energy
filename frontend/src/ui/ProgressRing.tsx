@@ -10,6 +10,7 @@ interface ProgressRingProps {
   children?: React.ReactNode;
   className?: string;
   lowerLabel?: boolean;
+  mutedProgress?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export function ProgressRing({
   children,
   className,
   lowerLabel = false,
+  mutedProgress = false,
 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(1, progress));
   const radius = (size - thickness) / 2;
@@ -46,14 +48,14 @@ export function ProgressRing({
         <path
           d={arc}
           fill="none"
-          stroke="#d9d9d9"
+          stroke={mutedProgress ? "#555555" : "#d9d9d9"}
           strokeWidth={thickness}
           strokeLinecap="round"
         />
         <path
           d={arc}
           fill="none"
-          stroke="#f08629"
+          stroke={mutedProgress ? "#d9d9d9" : "#f08629"}
           strokeWidth={thickness}
           strokeLinecap="round"
           strokeDasharray={`${dash} ${circumference}`}
