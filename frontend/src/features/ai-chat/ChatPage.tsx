@@ -49,7 +49,7 @@ export function ChatPage() {
   const profileContextSentRef = useRef(false);
 
   useEffect(() => {
-    const endpoint = new URL("/api/ws/chat", API_URL);
+    const endpoint = new URL("/api/ws/chat", API_URL || window.location.origin);
     endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
     const initData = getInitData();
     const protocols = initData
