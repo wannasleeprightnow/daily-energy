@@ -1,9 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { Spinner, Text } from "@/ui";
+import { AppShell, Button, Text } from "@/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/useUser";
 import { getTgId, getTgUser, setHeaderColor } from "@/lib/telegram";
 import { colors } from "@/design/tokens";
+import { actionKeys } from "@/hooks/useActions";
+import { planKeys } from "@/hooks/usePlans";
+import { queryKeys } from "@/hooks/useUser";
+import { listActions, listPlans } from "@/api/plans";
+import { getWeightHistory } from "@/api/users";
+import type { ActionType, PlanResponse } from "@/api/types";
+import { dayRange, nowStartOfDay } from "@/lib/dates";
 
 import { GreetPage } from "@/features/onboarding/GreetPage";
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage";
@@ -91,36 +99,19 @@ export default function App() {
 }
 
 function UserGate({ tgId, name }: { tgId: number; name?: string }) {
-  const { data: user, isLoading, isError } = useUser(tgId);
+  const { data: user, isLoading, isError, refetch } = useUser(tgId);
   const profileKey = user
     ? JSON.stringify([user.gender, user.date_of_birth, user.weight, user.height, user.goal, user.physical_activity])
     : "";
   const planQuery = useEnsurePlan(tgId, profileKey, !!user);
+  const warmup = useStartupWarmup(tgId, !!user);
 
   if (isLoading) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center gap-4 text-on"
-        style={{ height: "100dvh", backgroundColor: colors.bg }}
-      >
-        <Spinner size={40} />
-        <Text kind="subtitle">Загружаем твой профиль…</Text>
-      </div>
-    );
+    return <GreetPage showGo={false} />;
   }
 
   if (isError) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center gap-4 px-8 text-center text-on"
-        style={{ height: "100dvh", backgroundColor: colors.bg }}
-      >
-        <Text kind="title">Что-то пошло не так</Text>
-        <Text kind="subtitle">
-          Не удалось получить профиль. Проверь соединение и попробуй ещё раз.
-        </Text>
-      </div>
-    );
+    return <StartupError message="Не удалось получить профиль. Проверь соединение и попробуй ещё раз." retry={() => void refetch()} />;
   }
 
   if (!user) {
@@ -135,5 +126,110 @@ function UserGate({ tgId, name }: { tgId: number; name?: string }) {
     );
   }
 
+  if (!warmup.ready) {
+    if (warmup.error) {
+      return <StartupError message="Не удалось загрузить данные. Проверь соединение и попробуй ещё раз." retry={warmup.retry} />;
+    }
+    return <GreetPage showGo={false} />;
+  }
+
   return <AppRoutes utgid={tgId} planError={planQuery.error} retryPlan={() => void planQuery.refetch()} />;
+}
+
+function StartupError({ message, retry }: { message: string; retry: () => void }) {
+  return (
+    <AppShell className="relative px-6">
+      <div className="flex min-h-full flex-1 flex-col items-center justify-center text-center" style={{ backgroundColor: colors.bg }}>
+        <Text kind="title" className="mb-2">Не удалось открыть приложение</Text>
+        <Text kind="subtitle" className="max-w-[280px]">{message}</Text>
+        <Button onClick={retry} className="mt-8 px-8 py-3">Повторить</Button>
+      </div>
+    </AppShell>
+  );
+}
+
+/** Warm the exact query ranges used by the day and profile tabs before revealing the app. */
+function useStartupWarmup(utgid: number, enabled: boolean) {
+  const queryClient = useQueryClient();
+  const [attempt, setAttempt] = useState(0);
+  const [state, setState] = useState<{ ready: boolean; error: boolean }>({ ready: false, error: false });
+
+  useEffect(() => {
+    if (!enabled) {
+      setState({ ready: true, error: false });
+      return;
+    }
+
+    let cancelled = false;
+    setState({ ready: false, error: false });
+    const today = nowStartOfDay();
+    const todayRange = dayRange(today);
+    const lastPlanDay = new Date(today);
+    lastPlanDay.setDate(lastPlanDay.getDate() + 6);
+    const planHorizon = {
+      start_at: todayRange.start_at,
+      finish_at: dayRange(lastPlanDay).finish_at,
+    };
+    const chartStart = new Date(today);
+    chartStart.setDate(chartStart.getDate() - 6);
+    const chartRange = {
+      start_at: dayRange(chartStart).start_at,
+      finish_at: todayRange.finish_at,
+    };
+    const types: ActionType[] = ["Food", "Activity"];
+
+    const warmBackgroundData = () => {
+      void Promise.allSettled([
+        queryClient.fetchQuery({
+          queryKey: queryKeys.weightHistory(utgid),
+          queryFn: async () => {
+            const history = (await getWeightHistory(utgid)) ?? [];
+            return history.sort((a, b) => a.date - b.date);
+          },
+        }),
+        queryClient.fetchQuery({
+          queryKey: actionKeys(utgid, chartRange),
+          queryFn: () => listActions(utgid, chartRange),
+        }),
+      ]);
+    };
+
+    void Promise.all([
+      ...types.map((type) => queryClient.fetchQuery({
+        queryKey: actionKeys(utgid, todayRange, type),
+        queryFn: () => listActions(utgid, todayRange, type),
+      })),
+      queryClient.fetchQuery({
+        queryKey: ["startupPlanWarmup", utgid, planHorizon.start_at, planHorizon.finish_at],
+        queryFn: () => listPlans(utgid, planHorizon),
+      }).then((plans) => {
+        for (let offset = 0; offset < 7; offset += 1) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + offset);
+          const range = dayRange(date);
+          for (const type of types) {
+            const dayPlans = plans.filter((plan) =>
+              plan.type === type && plan.date >= range.start_at && plan.date <= range.finish_at,
+            );
+            queryClient.setQueryData<PlanResponse[]>(planKeys(utgid, range, type), dayPlans);
+          }
+        }
+      }),
+    ]).then(() => {
+      if (cancelled) return;
+      warmBackgroundData();
+      setState({ ready: true, error: false });
+    }).catch(() => {
+      if (!cancelled) setState({ ready: false, error: true });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt, enabled, queryClient, utgid]);
+
+  return {
+    ...state,
+    retry: () => setAttempt((current) => current + 1),
+  };
 }

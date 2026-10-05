@@ -7,7 +7,7 @@ import { colors } from "@/design/tokens";
  *
  * Logo, headline fs32, subtitle fs20, and an orange "Go" pill → onboarding.
  */
-export function GreetPage() {
+export function GreetPage({ showGo = true }: { showGo?: boolean }) {
   const navigate = useNavigate();
 
   return (
@@ -32,12 +32,14 @@ export function GreetPage() {
           Твой персональный гид в мире здоровья.
         </Text>
 
-        <Button
-          onClick={() => navigate("/onboarding")}
-          className="mt-10 px-12 py-4 text-h2"
-        >
-          Go
-        </Button>
+        {showGo && (
+          <Button
+            onClick={() => navigate("/onboarding")}
+            className="mt-10 px-12 py-4 text-h2"
+          >
+            Go
+          </Button>
+        )}
       </div>
     </AppShell>
   );
