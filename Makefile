@@ -73,7 +73,7 @@ guard-mode:
 	fi
 
 up: guard-mode
-	$(DC) $(PROFILE_FLAGS) up --build
+	$(DC) $(PROFILE_FLAGS) up --build -d
 
 down: guard-mode
 	$(DC) $(PROFILE_FLAGS) down -v
