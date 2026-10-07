@@ -5,7 +5,6 @@ import (
 	"github.com/isiyar/daily-energy/backend/internal/adapters/adapterModels"
 	"github.com/isiyar/daily-energy/backend/internal/domain/models"
 	"github.com/isiyar/daily-energy/backend/internal/domain/ports"
-	"github.com/isiyar/daily-energy/backend/internal/interfaces/http/dto"
 	"golang.org/x/crypto/openpgp/errors"
 	"gorm.io/gorm"
 )
@@ -46,10 +45,11 @@ func (r *userRepository) Delete(ctx context.Context, utgid int64) error {
 }
 
 func (r *userRepository) Update(
-	ctx context.Context, utgid int64, req dto.UserRequest) (models.User, error) {
-	var new_user adapterModels.User
-	if err := r.db.WithContext(ctx).Model(&adapterModels.User{}).Where("utgid = ?", utgid).Updates(req).First(&new_user).Error; err != nil {
+	ctx context.Context, utgid int64, user models.User) (models.User, error) {
+	userAdapter := toAdapterUser(user)
+	var updated adapterModels.User
+	if err := r.db.WithContext(ctx).Model(&adapterModels.User{}).Where("utgid = ?", utgid).Updates(userAdapter).First(&updated).Error; err != nil {
 		return models.User{}, err
 	}
-	return toDomainUser(new_user), nil
+	return toDomainUser(updated), nil
 }

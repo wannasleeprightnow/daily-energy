@@ -24,7 +24,7 @@ func (uc *UserUseCase) Add(ctx context.Context, user models.User) error {
 }
 
 func (uc *UserUseCase) Update(ctx context.Context, utgid int64, req dto.UserRequest) (models.User, error) {
-	return uc.repo.Update(ctx, utgid, req)
+	return uc.repo.Update(ctx, utgid, req.ToUser())
 }
 
 func (uc *UserUseCase) Delete(ctx context.Context, utgid int64) error {
