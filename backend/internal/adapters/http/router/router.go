@@ -33,8 +33,12 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 </html>`))
 	})
 	r.GET("/openapi.yml", func(c *gin.Context) {
-		c.Header("Content-Type", "application/yaml; charset=utf-8")
-		c.Data(http.StatusOK, "application/yaml; charset=utf-8", mustReadOpenAPI())
+		data, err := openapi.Files.ReadFile("openapi.yml")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read API schema"})
+			return
+		}
+		c.Data(http.StatusOK, "application/yaml; charset=utf-8", data)
 	})
 	r.GET("/ping", handler.PingHandler)
 
@@ -70,12 +74,4 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 	}
 
 	r.GET("/ws/chat", handler.TelegramAuthMiddleware(c.TelegramBotToken), h.Chat.HandleChat)
-}
-
-func mustReadOpenAPI() []byte {
-	data, err := openapi.Files.ReadFile("openapi.yml")
-	if err != nil {
-		panic(err)
-	}
-	return data
 }

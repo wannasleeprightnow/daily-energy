@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/isiyar/daily-energy/backend/internal/app/usecase"
@@ -24,53 +22,17 @@ func NewUserWeightHistoryHandler(userUC *usecase.UserUseCase, userWeightHistoryU
 }
 
 func (h *UserWeightHistoryHandler) GetUserWeightHistory(c *gin.Context) {
-	utgidParam := c.Param("utgid")
-	if utgidParam == "" {
-		log.Println("Missing utgid in URL")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing utgid in URL"})
-		return
-	}
-
-	utgidInt, err := strconv.ParseInt(utgidParam, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in URL: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in URL"})
-		return
-	}
-
-	utgidCtx, ok := c.Get("utgid")
+	utgid, ok := authenticatedUserID(c)
 	if !ok {
-		log.Println("Missing utgid in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing utgid in context"})
 		return
 	}
 
-	utgidCtxStr, ok := utgidCtx.(string)
-	if !ok {
-		log.Println("Invalid utgid type in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid utgid type in context"})
-		return
-	}
-
-	utgidCtxInt, err := strconv.ParseInt(utgidCtxStr, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in context: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in context"})
-		return
-	}
-
-	if utgidInt != utgidCtxInt {
-		log.Printf("Utgid mismatch: URL=%d, Context=%d", utgidInt, utgidCtxInt)
-		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
-		return
-	}
-
-	if _, err := h.userUC.Execute(c.Request.Context(), utgidInt); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
-	userWeightHistory, err := h.userWeightHistoryUC.GetUserWeightHistory(c.Request.Context(), utgidInt)
+	userWeightHistory, err := h.userWeightHistoryUC.GetUserWeightHistory(c.Request.Context(), utgid)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -85,48 +47,12 @@ func (h *UserWeightHistoryHandler) GetUserWeightHistory(c *gin.Context) {
 }
 
 func (h *UserWeightHistoryHandler) CreateUserWeightHistory(c *gin.Context) {
-	utgidParam := c.Param("utgid")
-	if utgidParam == "" {
-		log.Println("Missing utgid in URL")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing utgid in URL"})
-		return
-	}
-
-	utgidInt, err := strconv.ParseInt(utgidParam, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in URL: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in URL"})
-		return
-	}
-
-	utgidCtx, ok := c.Get("utgid")
+	utgid, ok := authenticatedUserID(c)
 	if !ok {
-		log.Println("Missing utgid in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing utgid in context"})
 		return
 	}
 
-	utgidCtxStr, ok := utgidCtx.(string)
-	if !ok {
-		log.Println("Invalid utgid type in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid utgid type in context"})
-		return
-	}
-
-	utgidCtxInt, err := strconv.ParseInt(utgidCtxStr, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in context: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in context"})
-		return
-	}
-
-	if utgidInt != utgidCtxInt {
-		log.Printf("Utgid mismatch: URL=%d, Context=%d", utgidInt, utgidCtxInt)
-		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
-		return
-	}
-
-	if _, err := h.userUC.Execute(c.Request.Context(), utgidInt); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
@@ -142,7 +68,7 @@ func (h *UserWeightHistoryHandler) CreateUserWeightHistory(c *gin.Context) {
 		return
 	}
 
-	domainUserWeightHistory := req.ToUserWeightHistory(utgidInt)
+	domainUserWeightHistory := req.ToUserWeightHistory(utgid)
 	if err := h.userWeightHistoryUC.Add(c.Request.Context(), domainUserWeightHistory); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
