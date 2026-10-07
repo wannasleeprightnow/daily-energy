@@ -24,7 +24,8 @@ export function OptionButton({
       onClick={onClick}
       aria-pressed={selected}
       className={clsx(
-        "flex min-h-[68px] w-full items-center gap-3 rounded-card px-4 text-left text-body transition-colors",
+        "flex min-h-[68px] w-full items-center gap-3 rounded-card px-4 text-left text-body",
+        "transition-[transform,background-color,border-color] duration-150 active:scale-[0.98]",
         "min-w-11 select-none border focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         selected
           ? "border-accent bg-surface text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"

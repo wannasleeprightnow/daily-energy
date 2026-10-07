@@ -3,6 +3,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+import { MotionProvider } from "@/ui/motion";
 import { setAuthHeader } from "@/api/client";
 import { getInitData } from "@/lib/telegram";
 
@@ -32,6 +33,8 @@ function initAuth() {
 export function Provider({ children }: { children: ReactNode }) {
   initAuth();
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MotionProvider>{children}</MotionProvider>
+    </QueryClientProvider>
   );
 }

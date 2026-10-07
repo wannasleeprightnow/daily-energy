@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { m } from "framer-motion";
 import { AppShell, Button, Text } from "@/ui";
+import { springs } from "@/ui/motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/useUser";
 import { getTgId, getTgUser, setHeaderColor } from "@/lib/telegram";
@@ -123,9 +125,16 @@ function StartupError({ message, retry }: { message: string; retry: () => void }
   return (
     <AppShell className="relative px-6">
       <div className="flex min-h-full flex-1 flex-col items-center justify-center text-center" style={{ backgroundColor: colors.bg }}>
-        <Text kind="title" className="mb-2">Не удалось открыть приложение</Text>
-        <Text kind="subtitle" className="max-w-[280px]">{message}</Text>
-        <Button onClick={retry} className="mt-8 px-8 py-3">Повторить</Button>
+        <m.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={springs.soft}
+          className="flex flex-col items-center"
+        >
+          <Text kind="title" className="mb-2">Не удалось открыть приложение</Text>
+          <Text kind="subtitle" className="max-w-[280px]">{message}</Text>
+          <Button onClick={retry} className="mt-8 px-8 py-3">Повторить</Button>
+        </m.div>
       </div>
     </AppShell>
   );

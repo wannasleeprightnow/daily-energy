@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { m } from "framer-motion";
 import type { ActionType } from "@/api/types";
+import { springs } from "@/ui/motion";
 import { useActions } from "@/hooks/useActions";
 import { useIsEnsuringPlan, useIsRefreshingFuturePlan, usePlans } from "@/hooks/usePlans";
 import { useUser } from "@/hooks/useUser";
@@ -253,21 +255,30 @@ function ToggleTabs({
   ];
   return (
     <div className="inline-flex rounded-card bg-surface p-1">
-      {items.map((it) => (
-        <button
-          key={it.value}
-          type="button"
-          aria-pressed={value === it.value}
-          onClick={() => onChange(it.value)}
-          className={`min-h-11 rounded-card px-[18px] text-[18px] font-medium transition-colors ${
-            value === it.value
-              ? "bg-[#303030] text-on ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
-              : "bg-transparent text-on"
-          }`}
-        >
-          {it.label}
-        </button>
-      ))}
+      {items.map((it) => {
+        const active = value === it.value;
+        return (
+          <button
+            key={it.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(it.value)}
+            className="relative min-h-11 rounded-card px-[18px] text-[18px] font-medium text-on"
+          >
+            {/* Sliding active indicator: a single element moves between tabs
+                via layoutId — transform-only, GPU-composited. */}
+            {active && (
+              <m.span
+                layoutId="day-tabs-indicator"
+                className="absolute inset-0 rounded-card bg-[#303030] ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
+                transition={springs.snappy}
+                aria-hidden
+              />
+            )}
+            <span className="relative">{it.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

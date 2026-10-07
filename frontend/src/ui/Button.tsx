@@ -30,7 +30,8 @@ export function Button({
     <button
       type="button"
       className={clsx(
-        "flex items-center justify-center gap-2 rounded-pill transition-colors",
+        "flex items-center justify-center gap-2 rounded-pill",
+        "transition-[transform,background-color,opacity] duration-150 active:scale-[0.97]",
         "min-h-11 min-w-11 select-none disabled:opacity-40",
         variantClasses[variant],
         fullWidth && "w-full",
@@ -53,7 +54,8 @@ export function GhostButton({
     <button
       type="button"
       className={clsx(
-        "flex min-h-11 min-w-11 items-center justify-center text-on transition-opacity active:opacity-60 disabled:opacity-40",
+        "flex min-h-11 min-w-11 items-center justify-center text-on",
+        "transition-[transform,opacity] duration-150 active:scale-90 active:opacity-60 disabled:opacity-40",
         className,
       )}
       {...rest}
@@ -76,7 +78,8 @@ export function IconPillButton({
     <button
       type="button"
       className={clsx(
-        "flex min-h-11 items-center justify-center gap-2 rounded-card bg-accent px-4 text-bodySm font-medium text-on transition-colors active:bg-accent-soft disabled:opacity-40",
+        "flex min-h-11 items-center justify-center gap-2 rounded-card bg-accent px-4 text-bodySm font-medium text-on",
+        "transition-[transform,background-color,opacity] duration-150 active:scale-[0.97] active:bg-accent-soft disabled:opacity-40",
         className,
       )}
       {...rest}

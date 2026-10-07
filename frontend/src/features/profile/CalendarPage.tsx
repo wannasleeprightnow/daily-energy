@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AnimatePresence, m } from "framer-motion";
 import { GhostButton } from "@/ui";
+import { monthVariants } from "@/ui/motion";
 import {
   ArrowLeftIcon,
   CrossIcon,
@@ -36,8 +38,11 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
     month: today.getMonth(),
     day: today.getDate(),
   }));
+  /** Slide direction of the last month switch (-1 = back, 1 = forward). */
+  const [direction, setDirection] = useState(0);
 
   const shiftMonth = (delta: number) => {
+    setDirection(delta);
     setView((v) => new Date(v.getFullYear(), v.getMonth() + delta, 1));
   };
 
@@ -83,35 +88,45 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-y-2">
-          {days.map((cell, i) => {
-            if (!cell) return <span key={`empty-${i}`} aria-hidden />;
-            const isSelected =
-              selected.year === cell.getFullYear() &&
-              selected.month === cell.getMonth() &&
-              selected.day === cell.getDate();
-            return (
-              <button
-                key={cell.toISOString()}
-                type="button"
-                aria-label={cell.toDateString()}
-                aria-pressed={isSelected}
-                onClick={() => pickDay(cell)}
-                className="flex h-11 items-center justify-center"
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[14px] font-medium tabular-nums ${
-                    isSelected
-                      ? "border-accent bg-[#383838] text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
-                      : "border-transparent bg-[#383838] text-on/70"
-                  }`}
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
+          <m.div
+            key={`${view.getFullYear()}-${view.getMonth()}`}
+            custom={direction}
+            variants={monthVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="grid grid-cols-7 gap-y-2"
+          >
+            {days.map((cell, i) => {
+              if (!cell) return <span key={`empty-${i}`} aria-hidden />;
+              const isSelected =
+                selected.year === cell.getFullYear() &&
+                selected.month === cell.getMonth() &&
+                selected.day === cell.getDate();
+              return (
+                <button
+                  key={cell.toISOString()}
+                  type="button"
+                  aria-label={cell.toDateString()}
+                  aria-pressed={isSelected}
+                  onClick={() => pickDay(cell)}
+                  className="flex h-11 items-center justify-center transition-transform duration-150 active:scale-90"
                 >
-                  {cell.getDate()}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border text-[14px] font-medium tabular-nums ${
+                      isSelected
+                        ? "border-accent bg-[#383838] text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
+                        : "border-transparent bg-[#383838] text-on/70"
+                    }`}
+                  >
+                    {cell.getDate()}
+                  </span>
+                </button>
+              );
+            })}
+          </m.div>
+        </AnimatePresence>
 
         <div className="mt-4 flex items-center justify-between">
           <GhostButton onClick={() => shiftMonth(-1)} aria-label="Предыдущий месяц">

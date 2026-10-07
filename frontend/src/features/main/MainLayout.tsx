@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence, m } from "framer-motion";
 import { AppShell, NavItem, TabBar } from "@/ui";
+import { easings, pageVariants } from "@/ui/motion";
 import { apiErrorMessage } from "@/api/client";
 import { formatDateWithMonth } from "@/lib/dates";
 import {
@@ -32,23 +34,43 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
 
   return (
     <AppShell className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
-      {planError && (
-        <div className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg" role="alert">
-          <p className="min-w-0 break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
-            {planErrorSummary(planError)}
-          </p>
-          <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
-            Повторить
-          </button>
-          <details className="mt-2 text-caption text-on/70">
-            <summary className="min-h-11 cursor-pointer content-center">Подробности ошибки</summary>
-            <p className="max-h-24 overflow-y-auto break-words whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>
-              {apiErrorMessage(planError)}
+      <AnimatePresence>
+        {planError && (
+          <m.div
+            key="plan-error"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
+            exit={{ opacity: 0, y: -16, transition: { duration: 0.16, ease: easings.smooth } }}
+            className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg" role="alert"
+          >
+            <p className="min-w-0 break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
+              {planErrorSummary(planError)}
             </p>
-          </details>
-        </div>
-      )}
-      <Outlet />
+            <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
+              Повторить
+            </button>
+            <details className="mt-2 text-caption text-on/70">
+              <summary className="min-h-11 cursor-pointer content-center">Подробности ошибки</summary>
+              <p className="max-h-24 overflow-y-auto break-words whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>
+                {apiErrorMessage(planError)}
+              </p>
+            </details>
+          </m.div>
+        )}
+      </AnimatePresence>
+
+      {/* Enter-only page transition keyed by screen (not by Food/Activity tab,
+          so toggling the segment keeps the screen mounted and animates only
+          the tab indicator + refreshed content). */}
+      <m.div
+        key={screenKey(pathname)}
+        variants={pageVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex min-h-full flex-1 flex-col"
+      >
+        <Outlet />
+      </m.div>
 
       <TabBar
         left={
@@ -83,6 +105,15 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
       />
     </AppShell>
   );
+}
+
+/**
+ * Stable key for the page transition: the first path segment only, so
+ * switching Food ↔ Activity inside a screen does not remount the page
+ * (the tab indicator + content animate locally instead).
+ */
+function screenKey(pathname: string): string {
+  return pathname.split("/").slice(0, 2).join("/") || "/";
 }
 
 function planErrorSummary(error: Error): string {
