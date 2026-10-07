@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1.7
-FROM golang:1.24 AS builder
+FROM golang:1.24-alpine AS builder
 
 ARG TARGETOS
 ARG TARGETARCH
 
 WORKDIR /backend
+
+RUN apk add --no-cache ca-certificates
 
 COPY go.mod go.sum ./
 
@@ -15,12 +17,14 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     GOMAXPROCS=2 CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
-    go build -p=1 -o main ./cmd/
+    go build -trimpath -buildvcs=false -ldflags="-s -w" -p=1 -o main ./cmd/
 
-FROM alpine:latest
+FROM gcr.io/distroless/static-debian12:nonroot
 
-WORKDIR /root/
+WORKDIR /app
 
-COPY --from=builder /backend/main .
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder --chown=nonroot:nonroot /backend/main ./main
 
-CMD ["./main"]
+EXPOSE 8080
+ENTRYPOINT ["/app/main"]
