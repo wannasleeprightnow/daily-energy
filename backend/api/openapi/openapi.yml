@@ -6,10 +6,8 @@ info:
   contact:
     name: Daily Energy Team
 servers:
-  - url: http://localhost:8080/
-    description: Локальный сервер разработки
   - url: /
-    description: Production через Nginx на домене текущего Mini App
+    description: Production API на домене Mini App
 
 tags:
   - name: system
