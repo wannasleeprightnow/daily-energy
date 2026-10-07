@@ -11,3 +11,15 @@ type UserRequest struct {
 	Goal             models.Goal             `json:"goal" validate:"required"`
 	PhysicalActivity models.PhysicalActivity `json:"physical_activity" validate:"required"`
 }
+
+func (u *UserRequest) ToUser() models.User {
+	return models.User{
+		Name:             u.Name,
+		Gender:           u.Gender,
+		DateofBirth:      u.DateofBirth,
+		Weight:           u.Weight,
+		Height:           u.Height,
+		Goal:             u.Goal,
+		PhysicalActivity: u.PhysicalActivity,
+	}
+}
