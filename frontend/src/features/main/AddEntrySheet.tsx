@@ -88,8 +88,10 @@ export function AddEntrySheet({
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [calories, setCalories] = useState(235);
   const [caloriesEdited, setCaloriesEdited] = useState(false);
+  const [foodEstimateForTitle, setFoodEstimateForTitle] = useState<string | null>(null);
   const [estimatedForDuration, setEstimatedForDuration] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createAction = useCreateAction(utgid);
@@ -104,6 +106,7 @@ export function AddEntrySheet({
     setTitle("");
     setCalories(235);
     setCaloriesEdited(false);
+    setFoodEstimateForTitle(null);
     setEstimatedForDuration(null);
     setDurationHours(0);
     setDurationMinutes(30);
@@ -128,7 +131,7 @@ export function AddEntrySheet({
       return;
     }
     try {
-      setBusy(true);
+      setIsEstimating(true);
       setError(null);
       const result = isFood
         ? await estimateCalories({ title: name })
@@ -151,13 +154,14 @@ export function AddEntrySheet({
       }
       setCalories(result.calories);
       setCaloriesEdited(true);
+      if (isFood) setFoodEstimateForTitle(name);
       setEstimatedForDuration(isFood ? null : durationMinutesTotal);
       haptic("success");
     } catch (err) {
       haptic("error");
       setError(apiErrorMessage(err));
     } finally {
-      setBusy(false);
+      setIsEstimating(false);
     }
   };
 
@@ -188,7 +192,7 @@ export function AddEntrySheet({
     );
 
     try {
-      setBusy(true);
+      setIsSubmitting(true);
       setError(null);
       let kcal = calories;
       if (isFood && !caloriesEdited) {
@@ -220,7 +224,7 @@ export function AddEntrySheet({
       haptic("error");
       setError(apiErrorMessage(err));
     } finally {
-      setBusy(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -306,13 +310,14 @@ export function AddEntrySheet({
         )}
 
         <Button
+          variant="outline"
           fullWidth
           onClick={() => void estimate()}
-          disabled={busy || createAction.isPending}
+          disabled={isEstimating || isSubmitting || createAction.isPending || (isFood && foodEstimateForTitle === title.trim())}
           className="min-h-[53px] px-3 text-[16px] font-medium"
         >
-          {busy ? (
-            <Spinner size={22} />
+          {isEstimating ? (
+            <Spinner size={22} className="shrink-0" />
           ) : (
             "Пусть Рафик сделает расчёт калорий"
           )}
@@ -352,12 +357,13 @@ export function AddEntrySheet({
         )}
 
         <Button
+          variant="outline"
           fullWidth
           onClick={() => void submit()}
-          disabled={busy || createAction.isPending}
+          disabled={isEstimating || isSubmitting || createAction.isPending}
           className="mt-auto min-h-[50px] text-[23px] font-medium"
         >
-          {busy ? <Spinner size={24} /> : "Добавить запись"}
+          {isSubmitting ? <Spinner size={24} className="shrink-0" /> : "Добавить запись"}
         </Button>
       </div>
         </m.div>
