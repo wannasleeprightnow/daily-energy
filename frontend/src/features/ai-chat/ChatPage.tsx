@@ -213,7 +213,7 @@ export function ChatPage() {
 
   return (
     <div
-      className="relative flex h-[calc(100dvh-76px)] min-h-0 flex-col overflow-hidden"
+      className="relative flex h-[calc(100dvh-var(--tab-bar-height))] min-h-0 flex-col overflow-hidden"
       style={{
         backgroundImage:
           "radial-gradient(ellipse 55% 36% at 100% 7%, rgba(240,134,41,.48), transparent 100%), radial-gradient(ellipse 55% 38% at 0% 88%, rgba(240,134,41,.42), transparent 100%), linear-gradient(#242424,#212121)",

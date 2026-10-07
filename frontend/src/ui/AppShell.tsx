@@ -23,7 +23,7 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <div
-      className={clsx("app-root flex flex-col overflow-y-auto", className)}
+      className={clsx("app-root flex flex-col", className)}
       {...rest}
     >
       {children}

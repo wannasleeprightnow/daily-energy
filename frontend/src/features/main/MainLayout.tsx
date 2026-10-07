@@ -40,7 +40,7 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
   };
 
   return (
-    <AppShell className="pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
+    <AppShell className={chatActive ? "" : "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]"}>
       <AnimatePresence>
         {planError && (
           <m.div
