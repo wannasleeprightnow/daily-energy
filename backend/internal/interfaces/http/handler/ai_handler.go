@@ -29,10 +29,12 @@ func (h *AiHandler) CalculationCalories(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
 		return
 	}
+	req.Title = strings.TrimSpace(req.Title)
 
 	jsonData, err := ai.GenerateMessage(
-		"Estimate calories for the specified food portion. Return only one integer: the total kilocalories for the stated portion. Do not include units, explanation, alternatives, ranges, or Markdown. If preparation is unspecified, assume the food is cooked with water.",
-		fmt.Sprintf("%s %s", h.cnfg.FoodToAnalyze, req.Title),
+		"Estimate the kilocalories in the stated food. If the portion is unspecified, assume one standard serving cooked in water. Reply with ONLY one positive integer - no units, words, ranges, or Markdown.",
+		req.Title,
+		32,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode request body"})
@@ -74,12 +76,12 @@ func (h *AiHandler) CalculationActivityCalories(c *gin.Context) {
 	}
 
 	userPrompt := fmt.Sprintf(
-		"Estimate calories burned for one activity session. Use the profile and duration below. Activity: %q. Duration: %d minutes. Weight: %d kg. Height: %d cm. Age: %d years. Gender: %s. Usual activity level: %s.",
+		"Estimate calories burned for one activity session. Activity: %q. Duration: %d minutes. Weight: %d kg. Height: %d cm. Age: %d years. Gender: %s. Usual activity level: %s.",
 		req.Title, req.DurationMinutes, req.Weight, req.Height, age, req.Gender, req.PhysicalActivity,
 	)
-	systemPrompt := "Estimate total energy expenditure for the described physical activity session in kilocalories. Choose a realistic intensity for the named activity and estimate with a standard MET-based method, taking body weight, age, height, and gender into account where relevant. Treat this as an approximate estimate, not a precise measurement. Return only one positive integer (kcal), with no units, explanation, alternatives, range, or Markdown."
+	systemPrompt := "Estimate kilocalories burned in the described activity session using a standard MET-based method with the provided weight, height, age, and gender; pick a realistic intensity for the named activity. Reply with ONLY one positive integer - no units, words, ranges, or Markdown."
 
-	jsonData, err := ai.GenerateMessage(systemPrompt, userPrompt)
+	jsonData, err := ai.GenerateMessage(systemPrompt, userPrompt, 32)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode request body"})
 		return

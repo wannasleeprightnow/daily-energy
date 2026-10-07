@@ -4,7 +4,8 @@ import { AnimatePresence, m } from "framer-motion";
 import { AppShell, NavItem, TabBar } from "@/ui";
 import { easings, pageVariants } from "@/ui/motion";
 import { apiErrorMessage } from "@/api/client";
-import { formatDateWithMonth } from "@/lib/dates";
+import { formatDateWithMonth, nowStartOfDay } from "@/lib/dates";
+import { writeDayPick } from "./DayContent";
 import {
   CalendarIcon,
   ForkKnifeIcon,
@@ -23,7 +24,7 @@ interface MainLayoutProps {
  * (Fig. `сегодня питание` frames). Navigation targets are provided by the
  * child routes; this layout only draws the persistent chrome.
  */
-export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
+export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -31,6 +32,12 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
   const profileActive = pathname.startsWith("/profile");
   const dateActive = !chatActive && !profileActive;
   const [date, month] = formatDateWithMonth().split(" ");
+
+  /** The date tab always opens the current day, discarding any calendar pick. */
+  const openToday = () => {
+    writeDayPick(utgid, nowStartOfDay(), "today");
+    navigate("/today/food");
+  };
 
   return (
     <AppShell className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
@@ -76,8 +83,8 @@ export function MainLayout({ planError, retryPlan }: MainLayoutProps) {
         left={
           <button
             type="button"
-            aria-label="Календарь"
-            onClick={() => navigate("/calendar")}
+            aria-label="Открыть сегодняшний день"
+            onClick={openToday}
             aria-current={dateActive ? "page" : undefined}
             className="flex min-h-11 min-w-[60px] flex-col items-center justify-center text-[18px] font-medium leading-5"
             style={{ color: dateActive ? "#ffffff" : "#666666" }}
