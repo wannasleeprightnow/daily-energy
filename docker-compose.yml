@@ -53,16 +53,23 @@ services:
     environment:
       SERVER_NAME: ${SERVER_NAME:?Set SERVER_NAME in .env}
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:?Set CERTBOT_EMAIL in .env}
-    command: >-
-      while :; do
-        if [ ! -s "/etc/letsencrypt/live/$$SERVER_NAME/fullchain.pem" ]; then
-          certbot certonly --webroot -w /var/www/certbot -d "$$SERVER_NAME"
-          --email "$$CERTBOT_EMAIL" --agree-tos --non-interactive && sleep 12h || sleep 300;
-        else
-          certbot renew --webroot -w /var/www/certbot || true;
-          sleep 12h;
-        fi;
-      done
+    command:
+      - |
+        while :; do
+          cert_path="/etc/letsencrypt/live/$$SERVER_NAME/fullchain.pem"
+          if [ ! -s "$$cert_path" ]; then
+            if certbot certonly --webroot -w /var/www/certbot \
+              -d "$$SERVER_NAME" --email "$$CERTBOT_EMAIL" \
+              --agree-tos --non-interactive; then
+              sleep 12h
+            else
+              sleep 300
+            fi
+          else
+            certbot renew --webroot -w /var/www/certbot || true
+            sleep 12h
+          fi
+        done
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
