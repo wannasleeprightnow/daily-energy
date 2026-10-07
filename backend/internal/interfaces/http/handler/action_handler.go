@@ -2,15 +2,15 @@ package handler
 
 import (
 	"errors"
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/isiyar/daily-energy/backend/internal/app/usecase"
 	"github.com/isiyar/daily-energy/backend/internal/interfaces/http/dto"
 	"github.com/isiyar/daily-energy/backend/pkg/utils"
 	"github.com/isiyar/daily-energy/backend/pkg/validator"
 	"gorm.io/gorm"
-	"log"
-	"net/http"
-	"strconv"
 )
 
 type ActionHandler struct {
@@ -26,48 +26,12 @@ func NewActionHandler(actionUC *usecase.ActionUseCase, userUC *usecase.UserUseCa
 }
 
 func (h *ActionHandler) CreateAction(c *gin.Context) {
-	utgidParam := c.Param("utgid")
-	if utgidParam == "" {
-		log.Println("Missing utgid in URL")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing utgid in URL"})
-		return
-	}
-
-	utgidInt, err := strconv.ParseInt(utgidParam, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in URL: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in URL"})
-		return
-	}
-
-	utgidCtx, ok := c.Get("utgid")
+	utgid, ok := authenticatedUserID(c)
 	if !ok {
-		log.Println("Missing utgid in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing utgid in context"})
 		return
 	}
 
-	utgidCtxStr, ok := utgidCtx.(string)
-	if !ok {
-		log.Println("Invalid utgid type in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid utgid type in context"})
-		return
-	}
-
-	utgidCtxInt, err := strconv.ParseInt(utgidCtxStr, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in context: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in context"})
-		return
-	}
-
-	if utgidInt != utgidCtxInt {
-		log.Printf("Utgid mismatch: URL=%d, Context=%d", utgidInt, utgidCtxInt)
-		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
-		return
-	}
-
-	if _, err := h.userUC.Execute(c.Request.Context(), utgidInt); errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := h.userUC.Execute(c.Request.Context(), utgid); errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
@@ -83,7 +47,7 @@ func (h *ActionHandler) CreateAction(c *gin.Context) {
 		return
 	}
 
-	domainAction := req.ToAction(utgidInt)
+	domainAction := req.ToAction(utgid)
 	if err := h.actionUC.Add(c.Request.Context(), &domainAction); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -93,25 +57,8 @@ func (h *ActionHandler) CreateAction(c *gin.Context) {
 }
 
 func (h *ActionHandler) GetAction(c *gin.Context) {
-
-	utgidCtx, ok := c.Get("utgid")
+	utgid, ok := userIDFromContext(c)
 	if !ok {
-		log.Println("Missing utgid in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing utgid in context"})
-		return
-	}
-
-	utgidCtxStr, ok := utgidCtx.(string)
-	if !ok {
-		log.Println("Invalid utgid type in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid utgid type in context"})
-		return
-	}
-
-	utgidCtxInt, err := strconv.ParseInt(utgidCtxStr, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in context: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in context"})
 		return
 	}
 
@@ -122,8 +69,8 @@ func (h *ActionHandler) GetAction(c *gin.Context) {
 		return
 	}
 
-	if action.Utgid != utgidCtxInt {
-		log.Printf("Utgid mismatch: Action.Utgid=%d, Context=%d", action.Utgid, utgidCtxInt)
+	if action.Utgid != utgid {
+		log.Printf("Utgid mismatch: Action.Utgid=%d, Context=%d", action.Utgid, utgid)
 		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
 		return
 	}
@@ -132,66 +79,30 @@ func (h *ActionHandler) GetAction(c *gin.Context) {
 }
 
 func (h *ActionHandler) GetActions(c *gin.Context) {
-	utgidParam := c.Param("utgid")
-	if utgidParam == "" {
-		log.Println("Missing utgid in URL")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing utgid in URL"})
-		return
-	}
-
-	utgidInt, err := strconv.ParseInt(utgidParam, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in URL: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in URL"})
-		return
-	}
-
-	utgidCtx, ok := c.Get("utgid")
+	utgid, ok := authenticatedUserID(c)
 	if !ok {
-		log.Println("Missing utgid in context")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing utgid in context"})
 		return
 	}
 
-	utgidCtxStr, ok := utgidCtx.(string)
-	if !ok {
-		log.Println("Invalid utgid type in context")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid utgid type in context"})
-		return
-	}
-
-	utgidCtxInt, err := strconv.ParseInt(utgidCtxStr, 10, 64)
-	if err != nil {
-		log.Printf("Invalid utgid format in context: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in context"})
-		return
-	}
-
-	if utgidInt != utgidCtxInt {
-		log.Printf("Utgid mismatch: URL=%d, Context=%d", utgidInt, utgidCtxInt)
-		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
-	}
-
-	if _, err := h.userUC.Execute(c.Request.Context(), utgidInt); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
 	startInt, finishInt, err := utils.ParseStartFinish(c)
-
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
 
 	if startInt > finishInt {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "start must be less end"})
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "start must be less than end"})
 		return
 	}
 
 	t := c.Query("type")
 
-	actions, err := h.actionUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, utgidInt, t)
+	actions, err := h.actionUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, utgid, t)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

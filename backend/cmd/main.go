@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/isiyar/daily-energy/backend/bot"
@@ -10,29 +13,37 @@ import (
 	"github.com/isiyar/daily-energy/backend/internal/adapters/repository"
 	"github.com/isiyar/daily-energy/backend/internal/app/usecase"
 	"github.com/isiyar/daily-energy/backend/internal/interfaces/http/handler"
-	"log"
-	"strings"
+	"gorm.io/gorm"
 )
 
 func main() {
-	c, err := config.LoadConfig()
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Panicf("Failed to load config: %v", err)
+		return err
 	}
 
-	if c.TelegramBotToken != "" {
-		go bot.RunBot(&c)
-	}
+	gin.SetMode(gin.ReleaseMode)
 
-	if !c.Debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	dbConn, err := db.InitDatabase(c)
+	dbConn, err := db.InitDatabase(cfg)
 	if err != nil {
-		log.Panicf("Failed to initialize database: %v", err)
+		return err
 	}
 
+	go bot.RunBot(&cfg)
+	r := newRouter(cfg, dbConn)
+	if err := r.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func newRouter(cfg config.Config, dbConn *gorm.DB) *gin.Engine {
 	userRepo := repository.NewUserRepository(dbConn)
 	userUC := usecase.NewUserUseCase(userRepo)
 	userHandler := handler.NewUserHandler(userUC)
@@ -47,10 +58,10 @@ func main() {
 
 	planRepo := repository.NewPlanRepository(dbConn)
 	planUC := usecase.NewPlanUseCase(planRepo)
-	planHandler := handler.NewPlanHandler(c, planUC, userUC)
+	planHandler := handler.NewPlanHandler(cfg, planUC, userUC)
 
-	aiHandler := handler.NewAiHandler(c)
-	chatHandler := handler.NewChatHandler(c)
+	aiHandler := handler.NewAiHandler(cfg)
+	chatHandler := handler.NewChatHandler(cfg)
 
 	h := handler.NewHandler(
 		actionHandler,
@@ -64,16 +75,23 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:  strings.Split(c.AllowOrigins, ","),
+		AllowOrigins:  allowedOrigins(cfg.AllowOrigins),
 		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization", "initdata"},
 		ExposeHeaders: []string{"Content-Length"},
 	}))
 
 	apiGroup := r.Group("/api")
-	router.RegisterRoutes(apiGroup, h, c)
+	router.RegisterRoutes(apiGroup, h, cfg)
+	return r
+}
 
-	if err := r.Run(); err != nil {
-		log.Panicf("Failed to start server: %v", err)
+func allowedOrigins(value string) []string {
+	var origins []string
+	for _, origin := range strings.Split(value, ",") {
+		if origin = strings.TrimSpace(origin); origin != "" {
+			origins = append(origins, origin)
+		}
 	}
+	return origins
 }
