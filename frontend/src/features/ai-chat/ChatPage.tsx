@@ -282,6 +282,7 @@ export function ChatPage() {
           onChange={setDraft}
           onSend={send}
           disabled={connectionState !== "connected"}
+          busy={busy}
           placeholder="Пиши сюда..."
           expanded={!hasMessages}
         />
@@ -327,6 +328,7 @@ function ChatInput({
   onChange,
   onSend,
   disabled,
+  busy,
   placeholder,
   expanded,
 }: {
@@ -334,6 +336,7 @@ function ChatInput({
   onChange: (value: string) => void;
   onSend: () => void;
   disabled: boolean;
+  busy: boolean;
   placeholder: string;
   expanded: boolean;
 }) {
@@ -344,17 +347,29 @@ function ChatInput({
     }
   };
 
+  const canSend = value.trim().length > 0 && !disabled && !busy;
+
   return (
-    <textarea
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      onKeyDown={handleKey}
-      placeholder={placeholder}
-      aria-label="Сообщение для Рафика"
-      disabled={disabled}
-      rows={expanded ? 3 : 2}
-      className={`block w-full resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[80px]" : "min-h-[58px] max-h-28"}`}
-    />
+    <div className="flex items-center gap-2">
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKey}
+        placeholder={placeholder}
+        aria-label="Сообщение для Рафика"
+        disabled={disabled}
+        rows={expanded ? 3 : 2}
+        className={`min-w-0 flex-1 resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[80px]" : "min-h-[58px] max-h-28"}`}
+      />
+      <Button
+        onClick={onSend}
+        disabled={!canSend}
+        aria-label="Отправить"
+        className="h-[57px] w-[66px] shrink-0 text-h2"
+      >
+        →
+      </Button>
+    </div>
   );
 }
 
