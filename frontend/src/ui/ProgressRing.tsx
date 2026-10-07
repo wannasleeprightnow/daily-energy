@@ -1,4 +1,6 @@
+import { m } from "framer-motion";
 import clsx from "clsx";
+import { easings } from "./motion";
 
 interface ProgressRingProps {
   /** 0..1 */
@@ -52,14 +54,17 @@ export function ProgressRing({
           strokeWidth={thickness}
           strokeLinecap="round"
         />
-        <path
+        {/* Progress arc: animates from empty on mount and springs between
+            values on updates (SVG path repaint is cheap at this size). */}
+        <m.path
           d={arc}
           fill="none"
           stroke={mutedProgress ? "#d9d9d9" : "#f08629"}
           strokeWidth={thickness}
           strokeLinecap="round"
-          strokeDasharray={`${dash} ${circumference}`}
-          style={{ transition: "stroke-dasharray 0.4s ease" }}
+          initial={{ strokeDasharray: `0 ${circumference}` }}
+          animate={{ strokeDasharray: `${dash} ${circumference}` }}
+          transition={{ duration: 0.5, ease: easings.out }}
         />
       </svg>
       <div className={lowerLabel ? "absolute inset-0 flex items-end justify-center pb-2" : "absolute inset-x-0 flex items-center justify-center pb-4"}>

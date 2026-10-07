@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { EmptyState, ProgressRing, Spinner } from "@/ui";
+import { m } from "framer-motion";
+import { AnimatedNumber, EmptyState, ProgressRing, Spinner } from "@/ui";
+import { fadeInUp, listItemVariants } from "@/ui/motion";
 import type { ActionResponse } from "@/api/types";
 import { formatClock } from "@/lib/dates";
 
@@ -10,10 +12,29 @@ import { formatClock } from "@/lib/dates";
 
 const CARD_BG = "#272727";
 
-/** One horizontal action/food row — 292×40 r15 `#383838`. */
-export function ActionRow({ action, compact = false }: { action: ActionResponse; compact?: boolean }) {
+/**
+ * One horizontal action/food row — 292×40 r15 `#383838`.
+ * Animates in with a capped stagger (see `listItemVariants`): the delay is
+ * derived from the row index but stops growing after a few rows, so long
+ * lists never wait on a long cascade.
+ */
+export function ActionRow({
+  action,
+  compact = false,
+  index = 0,
+}: {
+  action: ActionResponse;
+  compact?: boolean;
+  index?: number;
+}) {
   return (
-    <li className={`flex w-full items-center gap-3 rounded-card ${compact ? "min-h-[40px] bg-surface2 px-[14px] py-1.5" : "min-h-[40px] bg-[#383838] px-4 py-2"}`}>
+    <m.li
+      variants={listItemVariants}
+      custom={index}
+      initial="hidden"
+      animate="visible"
+      className={`flex w-full items-center gap-3 rounded-card ${compact ? "min-h-[40px] bg-surface2 px-[14px] py-1.5" : "min-h-[40px] bg-[#383838] px-4 py-2"}`}
+    >
       <span className={`${compact ? "w-[46px] text-[16px] leading-5" : "w-[52px] text-bodySm"} shrink-0 text-on/80 tabular-nums`}>
         {formatClock(action.date)}
       </span>
@@ -23,7 +44,7 @@ export function ActionRow({ action, compact = false }: { action: ActionResponse;
       <span className={`shrink-0 text-on/80 tabular-nums ${compact ? "text-[16px] leading-5" : "text-bodySm"}`}>
         {action.calories} ккал
       </span>
-    </li>
+    </m.li>
   );
 }
 
@@ -42,8 +63,8 @@ export function ActionList({
   }
   return (
     <ul className={`flex flex-col ${compact ? "gap-2 px-0 py-1.5" : "gap-2 p-4"}`}>
-      {actions.map((a) => (
-        <ActionRow key={a.id} action={a} compact={compact} />
+      {actions.map((a, index) => (
+        <ActionRow key={a.id} action={a} compact={compact} index={index} />
       ))}
     </ul>
   );
@@ -82,7 +103,7 @@ export function ProgressRingBlock({
           "План не создан"
         ) : (
           <>
-            {remaining} ккал
+            <AnimatedNumber value={remaining} /> ккал
             <br />
             осталось
           </>
@@ -95,12 +116,17 @@ export function ProgressRingBlock({
 /** The "Совет от ИИ-помощника" card — 292×118 r15 `#d9d9d9`. */
 export function AiAdviceCard({ children, large = false }: { children: ReactNode; large?: boolean }) {
   return (
-    <div className={`flex w-full min-w-0 flex-col gap-1 rounded-card bg-[#d9d9d9] text-on ${large ? "px-[13px] py-[12px]" : "p-4"}`}>
+    <m.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className={`flex w-full min-w-0 flex-col gap-1 rounded-card bg-[#d9d9d9] text-on ${large ? "px-[13px] py-[12px]" : "p-4"}`}
+    >
       <span className={`${large ? "text-[16px] leading-5" : "text-[13px]"} font-medium text-[#333]`}>
         Совет от ИИ-помощника:
       </span>
       <span className={`${large ? "text-[16px] leading-[21px]" : "text-[13px] leading-[17px]"} whitespace-pre-wrap break-words text-[#000]`}>{children}</span>
-    </div>
+    </m.div>
   );
 }
 

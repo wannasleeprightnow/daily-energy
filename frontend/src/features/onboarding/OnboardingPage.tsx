@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { AnimatePresence, m } from "framer-motion";
 import { useCreateUser } from "@/hooks/useUser";
 import { apiErrorMessage } from "@/api/client";
 import { Spinner, Text } from "@/ui";
+import { springs, stepVariants } from "@/ui/motion";
 import { AppShell } from "@/ui/AppShell";
 import { colors } from "@/design/tokens";
 import { haptic } from "@/lib/telegram";
@@ -35,10 +37,18 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
   const store = useOnboardingStore();
   const { draft, ...actions } = store();
   const [step, setStep] = useState(0);
+  /** Slide direction for the step transition: 1 = forward, -1 = back. */
+  const [direction, setDirection] = useState(1);
   const createUser = useCreateUser();
 
-  const goNext = () => setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
-  const goBack = () => setStep((s) => Math.max(0, s - 1));
+  const goNext = () => {
+    setDirection(1);
+    setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
+  };
+  const goBack = () => {
+    setDirection(-1);
+    setStep((s) => Math.max(0, s - 1));
+  };
 
   const submit = () => {
     const profile = draftToProfile(draft);
@@ -55,13 +65,18 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
   if (createUser.isPending) {
     return (
       <AppShell className="items-center justify-center" style={{ backgroundColor: colors.bg }} aria-live="polite">
-        <div className="flex flex-col items-center gap-4 px-8 text-center text-on">
+        <m.div
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={springs.soft}
+          className="flex flex-col items-center gap-4 px-8 text-center text-on"
+        >
           <Spinner size={40} />
           <Text kind="title">Сохраняем профиль</Text>
           <Text kind="subtitle">
             Создаём твой план на основе данных…
           </Text>
-        </div>
+        </m.div>
       </AppShell>
     );
   }
@@ -70,80 +85,91 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
 
   return (
     <div style={{ backgroundColor: colors.bg }}>
-      {step === 0 && (
-        <NameStep
-          step={step}
-          total={TOTAL_STEPS}
-          initialName={name ?? ""}
-          onBack={() => window.history.back()}
-          onNext={(v) => {
-            actions.setName(v);
-            goNext();
-          }}
-        />
-      )}
-      {step === 1 && (
-        <GenderStep
-          step={step}
-          total={TOTAL_STEPS}
-          selected={draft.gender}
-          onBack={goBack}
-          onChange={actions.setGender}
-          onNext={goNext}
-        />
-      )}
-      {step === 2 && (
-        <BirthdayStep
-          step={step}
-          total={TOTAL_STEPS}
-          value={draft.dateOfBirth}
-          onBack={goBack}
-          onChange={(d) => actions.setDateOfBirth(d)}
-          onNext={goNext}
-        />
-      )}
-      {step === 3 && (
-        <WeightStep
-          step={step}
-          total={TOTAL_STEPS}
-          value={draft.weight}
-          onBack={goBack}
-          onChange={(v) => actions.setWeight(v)}
-          onNext={goNext}
-        />
-      )}
-      {step === 4 && (
-        <HeightStep
-          step={step}
-          total={TOTAL_STEPS}
-          value={draft.height}
-          onBack={goBack}
-          onChange={(v) => actions.setHeight(v)}
-          onNext={goNext}
-        />
-      )}
-      {step === 5 && (
-        <GoalStep
-          step={step}
-          total={TOTAL_STEPS}
-          selected={draft.goal}
-          onBack={goBack}
-          onChange={actions.setGoal}
-          onNext={goNext}
-        />
-      )}
-      {step === 6 && (
-        <ActivityStep
-          step={step}
-          total={TOTAL_STEPS}
-          selected={draft.physicalActivity}
-          onBack={goBack}
-          onChange={actions.setPhysicalActivity}
-          onNext={() => {
-            if (isLast) submit();
-          }}
-        />
-      )}
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <m.div
+          key={step}
+          custom={direction}
+          variants={stepVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+        >
+          {step === 0 && (
+            <NameStep
+              step={step}
+              total={TOTAL_STEPS}
+              initialName={name ?? ""}
+              onBack={() => window.history.back()}
+              onNext={(v) => {
+                actions.setName(v);
+                goNext();
+              }}
+            />
+          )}
+          {step === 1 && (
+            <GenderStep
+              step={step}
+              total={TOTAL_STEPS}
+              selected={draft.gender}
+              onBack={goBack}
+              onChange={actions.setGender}
+              onNext={goNext}
+            />
+          )}
+          {step === 2 && (
+            <BirthdayStep
+              step={step}
+              total={TOTAL_STEPS}
+              value={draft.dateOfBirth}
+              onBack={goBack}
+              onChange={(d) => actions.setDateOfBirth(d)}
+              onNext={goNext}
+            />
+          )}
+          {step === 3 && (
+            <WeightStep
+              step={step}
+              total={TOTAL_STEPS}
+              value={draft.weight}
+              onBack={goBack}
+              onChange={(v) => actions.setWeight(v)}
+              onNext={goNext}
+            />
+          )}
+          {step === 4 && (
+            <HeightStep
+              step={step}
+              total={TOTAL_STEPS}
+              value={draft.height}
+              onBack={goBack}
+              onChange={(v) => actions.setHeight(v)}
+              onNext={goNext}
+            />
+          )}
+          {step === 5 && (
+            <GoalStep
+              step={step}
+              total={TOTAL_STEPS}
+              selected={draft.goal}
+              onBack={goBack}
+              onChange={actions.setGoal}
+              onNext={goNext}
+            />
+          )}
+          {step === 6 && (
+            <ActivityStep
+              step={step}
+              total={TOTAL_STEPS}
+              selected={draft.physicalActivity}
+              onBack={goBack}
+              onChange={actions.setPhysicalActivity}
+              onNext={() => {
+                if (isLast) submit();
+              }}
+            />
+          )}
+        </m.div>
+      </AnimatePresence>
       {createUser.isError && (
         <div className="px-6 pb-8 text-center">
           <Text kind="subtitle" className="text-danger">

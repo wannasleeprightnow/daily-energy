@@ -19,3 +19,21 @@ export { WheelColumn } from "./WheelPicker";
 export { Sheet } from "./Sheet";
 export { EmptyState } from "./EmptyState";
 export { Spinner } from "./Spinner";
+export {
+  AnimatedNumber,
+  MotionProvider,
+  PageTransition,
+  durations,
+  easings,
+  fadeIn,
+  fadeInUp,
+  listItemVariants,
+  monthVariants,
+  overlayVariants,
+  pageVariants,
+  scaleIn,
+  sheetVariants,
+  springs,
+  staggerCap,
+  stepVariants,
+} from "./motion";

@@ -1,4 +1,6 @@
+import { m } from "framer-motion";
 import clsx from "clsx";
+import { springs } from "./motion";
 
 interface OnboardingProgressBarProps {
   /** Number of completed steps (0..total). */
@@ -28,9 +30,13 @@ export function OnboardingProgressBar({
         className,
       )}
     >
-      <div
-        className="absolute inset-y-0 left-0 rounded-pill bg-accent transition-all"
-        style={{ width: `${progress * 100}%` }}
+      {/* Fill animates via scaleX (transform-only, no layout cost); the
+          origin stays on the left so the bar grows from where it started. */}
+      <m.div
+        className="absolute inset-y-0 left-0 w-full origin-left rounded-pill bg-accent"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: progress }}
+        transition={springs.soft}
       />
     </div>
   );

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, m } from "framer-motion";
 import { Button } from "@/ui";
+import { easings, fadeInUp, springs } from "@/ui/motion";
 import { useUser } from "@/hooks/useUser";
 import { getInitData, getTgUser } from "@/lib/telegram";
 import { API_URL } from "@/constants";
@@ -200,33 +202,46 @@ export function ChatPage() {
         <span className="block text-[25px] font-medium leading-none text-on">Daily Energy</span>
       </header>
 
-      {connectionState !== "connected" && (
-        <div className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3">
-          <p className="text-[14px] leading-5 text-on" role="status">
-            {connectionState === "connecting"
-              ? "Подключаю чат…"
-              : connectionState === "reconnecting"
-                ? "Связь с чатом потеряна. Переподключаюсь…"
-                : "Нет соединения с чатом."}
-          </p>
-          <Button
-            onClick={() => setConnectionAttempt((attempt) => attempt + 1)}
-            className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+      <AnimatePresence>
+        {connectionState !== "connected" && (
+          <m.div
+            key="connection-banner"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
+            exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
+            className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3"
           >
-            Переподключить
-          </Button>
-        </div>
-      )}
+            <p className="text-[14px] leading-5 text-on" role="status">
+              {connectionState === "connecting"
+                ? "Подключаю чат…"
+                : connectionState === "reconnecting"
+                  ? "Связь с чатом потеряна. Переподключаюсь…"
+                  : "Нет соединения с чатом."}
+            </p>
+            <Button
+              onClick={() => setConnectionAttempt((attempt) => attempt + 1)}
+              className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+            >
+              Переподключить
+            </Button>
+          </m.div>
+        )}
+      </AnimatePresence>
 
       {!hasMessages && (
-        <section className="mx-auto flex w-[76%] flex-1 flex-col justify-center">
+        <m.section
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          className="mx-auto flex w-[76%] flex-1 flex-col justify-center"
+        >
           <h1 className="text-center text-[24px] font-medium leading-[30px] text-accent">
             Привет, {userName}!
           </h1>
           <p className="mt-2 text-center text-[13px] leading-[17px] text-on">
             Меня зовут Рафик. Задавай любые вопросы!
           </p>
-        </section>
+        </m.section>
       )}
 
       {hasMessages && (
@@ -239,42 +254,58 @@ export function ChatPage() {
             WebkitMaskImage: "linear-gradient(to bottom, transparent 0px, black 28px, black calc(100% - 28px), transparent 100%)",
           }}
         >
-          {messages.map((message) => (
-            <Bubble key={message.id} message={message} />
+          {messages.map((message, index) => (
+            <Bubble key={message.id} message={message} index={index} />
           ))}
-          {busy && (
-            <div className="mr-auto flex items-center gap-2 rounded-card bg-[#303030] px-4 py-3 text-[15px] text-on/65" role="status" aria-label="Рафик печатает">
-              <span>Рафик печатает</span>
-              <span className="flex items-center gap-1" aria-hidden="true">
-                {[0, 1, 2].map((dot) => (
-                  <span
-                    key={dot}
-                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-current"
-                    style={{ animationDelay: `${dot * 140}ms` }}
-                  />
-                ))}
-              </span>
-            </div>
-          )}
+          <AnimatePresence>
+            {busy && (
+              <m.div
+                key="typing"
+                initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1, transition: springs.soft }}
+                exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }}
+                className="mr-auto flex items-center gap-2 rounded-card bg-[#303030] px-4 py-3 text-[15px] text-on/65" role="status" aria-label="Рафик печатает"
+              >
+                <span>Рафик печатает</span>
+                <span className="flex items-center gap-1" aria-hidden="true">
+                  {[0, 1, 2].map((dot) => (
+                    <span
+                      key={dot}
+                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                      style={{ animationDelay: `${dot * 140}ms` }}
+                    />
+                  ))}
+                </span>
+              </m.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
-      {error && (
-        <div className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3">
-          <p role="alert" className="text-[14px] leading-5 text-on">
-            {error}
-          </p>
-          {retryText && (
-            <Button
-              onClick={retry}
-              disabled={busy || connectionState !== "connected"}
-              className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
-            >
-              Повторить
-            </Button>
-          )}
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <m.div
+            key="chat-error"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
+            exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
+            className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3"
+          >
+            <p role="alert" className="text-[14px] leading-5 text-on">
+              {error}
+            </p>
+            {retryText && (
+              <Button
+                onClick={retry}
+                disabled={busy || connectionState !== "connected"}
+                className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+              >
+                Повторить
+              </Button>
+            )}
+          </m.div>
+        )}
+      </AnimatePresence>
 
       <div className={hasMessages ? "mt-auto shrink-0 px-[8%] pb-10 pt-6" : "mx-auto mt-8 w-[84%] shrink-0 pb-8"}>
         <ChatInput
@@ -291,10 +322,18 @@ export function ChatPage() {
   );
 }
 
-function Bubble({ message }: { message: Message }) {
+function Bubble({ message, index = 0 }: { message: Message; index?: number }) {
   const isUser = message.role === "user";
   return (
-    <div
+    <m.div
+      initial={{ opacity: 0, y: 14, scale: 0.97 }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        // Capped cascade: the first few bubbles ripple in, the rest together.
+        transition: { delay: Math.min(index, 6) * 0.04, ...springs.soft },
+      }}
       className={`max-w-[85%] whitespace-pre-wrap break-words rounded-card px-3 py-3 text-[16px] leading-[21px] ${
         isUser ? "ml-auto bg-black text-on" : "mr-auto bg-[#303030] text-on"
       }`}
@@ -319,7 +358,7 @@ function Bubble({ message }: { message: Message }) {
           {message.text}
         </ReactMarkdown>
       )}
-    </div>
+    </m.div>
   );
 }
 

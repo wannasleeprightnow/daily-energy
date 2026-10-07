@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { AnimatePresence, m } from "framer-motion";
 import type { ActionType } from "@/api/types";
 import { Button, Input, Spinner, WheelColumn } from "@/ui";
+import { easings } from "@/ui/motion";
 import { CrossIcon } from "@/ui/icons";
 import { useCreateAction } from "@/hooks/useActions";
 import { estimateActivityCalories, estimateCalories } from "@/api/ai";
@@ -222,10 +224,24 @@ export function AddEntrySheet({
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-40 mx-auto flex w-full max-w-app min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24">
+    <AnimatePresence>
+      {open && (
+        <m.div
+          key="add-entry"
+          initial={{ opacity: 0, x: "8%" }}
+          animate={{
+            opacity: 1,
+            x: 0,
+            transition: { duration: 0.24, ease: easings.out },
+          }}
+          exit={{
+            opacity: 0,
+            x: "8%",
+            transition: { duration: 0.16, ease: easings.smooth },
+          }}
+          className="fixed inset-0 z-40 mx-auto flex w-full max-w-app min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24"
+        >
       <header className="mb-5 flex min-h-10 items-center gap-2">
         <button
           type="button"
@@ -345,6 +361,8 @@ export function AddEntrySheet({
           {busy ? <Spinner size={24} /> : "Добавить запись"}
         </Button>
       </div>
-    </div>
+        </m.div>
+      )}
+    </AnimatePresence>
   );
 }
