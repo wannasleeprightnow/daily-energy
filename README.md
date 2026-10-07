@@ -36,7 +36,7 @@ make configure-prod
 make up
 ```
 
-Compose собирает backend и frontend из Dockerfile проекта, запускает PostgreSQL, Nginx и Certbot. При первом старте Nginx обслуживает HTTP challenge; после выпуска сертификата автоматически переключается на HTTPS. В дальнейшем Certbot продлевает сертификат, а Nginx перечитывает обновлённые файлы.
+Перед запуском `make up` последовательно собирает backend, затем frontend, чтобы ограничить пиковую нагрузку памяти. После успешной сборки Compose запускает PostgreSQL, Nginx и Certbot. При первом старте Nginx обслуживает HTTP challenge; после выпуска сертификата автоматически переключается на HTTPS. В дальнейшем Certbot продлевает сертификат, а Nginx перечитывает обновлённые файлы.
 
 При настроенном домене frontend доступен по `https://app.example.com/`, API — по `https://app.example.com/api`, документация — по `https://app.example.com/api/docs`.
 

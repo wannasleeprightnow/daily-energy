@@ -44,7 +44,7 @@ if ($Down) {
 } elseif ($Logs) {
     $ComposeArgs = @('logs', '-f')
 } elseif ($Up) {
-	$ComposeArgs = @('up', '--build', '-d', '--remove-orphans')
+	$ComposeArgs = @()
 } else {
     Write-Host 'Production environment is ready. Use -Up to start the stack.' -ForegroundColor Green
     exit 0
@@ -52,7 +52,21 @@ if ($Down) {
 
 Push-Location $RootDir
 try {
-    & docker compose @ComposeArgs
+    if ($Up) {
+        & docker compose --parallel 1 build backend-prod
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+
+        & docker compose --parallel 1 build frontend-prod
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+
+        & docker compose up -d --remove-orphans
+    } else {
+        & docker compose @ComposeArgs
+    }
     exit $LASTEXITCODE
 } finally {
     Pop-Location
