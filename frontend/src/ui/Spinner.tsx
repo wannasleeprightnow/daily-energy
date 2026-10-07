@@ -10,6 +10,7 @@ export function Spinner({ size = 24, className }: SpinnerProps) {
   return (
     <span
       aria-label="Загрузка"
+      className={clsx("inline-block animate-spin rounded-full", className)}
       role="status"
       style={{
         width: size,
@@ -17,7 +18,6 @@ export function Spinner({ size = 24, className }: SpinnerProps) {
         border: "3px solid rgba(240,134,41,0.25)",
         borderTopColor: "#f08629",
       }}
-      className={clsx("inline-block animate-spin rounded-full", className)}
     />
   );
 }

@@ -1,4 +1,5 @@
 import { OnboardingLayout } from "./OnboardingLayout";
+
 import { WheelColumn } from "@/ui";
 
 interface NumberWheelStepProps {
@@ -35,19 +36,19 @@ export function NumberWheelStep({
 
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title={title}
       showBack
+      canContinue={value !== null}
+      step={step}
+      title={title}
+      total={total}
       onBack={onBack}
       onNext={onNext}
-      canContinue={value !== null}
     >
       <WheelColumn
         ariaLabel={title}
         label={unit}
-        values={values}
         selected={current}
+        values={values}
         onSelect={onChange}
       />
     </OnboardingLayout>
@@ -56,6 +57,8 @@ export function NumberWheelStep({
 
 function range(min: number, max: number): number[] {
   const out: number[] = [];
+
   for (let i = min; i <= max; i += 1) out.push(i);
+
   return out;
 }

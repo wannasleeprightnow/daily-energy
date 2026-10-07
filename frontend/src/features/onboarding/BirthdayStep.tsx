@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+
 import { OnboardingLayout } from "./OnboardingLayout";
+
 import { WheelColumn } from "@/ui";
 import { MONTHS_RU } from "@/constants";
 
@@ -15,13 +17,17 @@ interface BirthdayStepProps {
 const YEARS = (() => {
   const now = new Date().getFullYear();
   const out: number[] = [];
+
   for (let y = now; y >= now - 100; y--) out.push(y);
+
   return out;
 })();
 
 const DAYS = (() => {
   const out: number[] = [];
+
   for (let d = 1; d <= 31; d++) out.push(d);
+
   return out;
 })();
 
@@ -43,6 +49,7 @@ export function BirthdayStep({
 
   const commit = (d: number, m: number, y: number) => {
     const clampedDay = Math.min(d, daysInMonth(y, m));
+
     onChange(new Date(y, m, clampedDay));
   };
 
@@ -52,18 +59,18 @@ export function BirthdayStep({
       { values: MONTHS_RU, label: "Месяц", current: MONTHS_RU[monthIndex], onSelect: (v: string) => commit(day, MONTHS_RU.indexOf(v), year) },
       { values: YEARS, label: "Год", current: year, onSelect: (v: number) => commit(day, monthIndex, v) },
     ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [day, monthIndex, year]);
 
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title="Ваша дата рождения"
       showBack
+      canContinue={!!value}
+      step={step}
+      title="Ваша дата рождения"
+      total={total}
       onBack={onBack}
       onNext={onNext}
-      canContinue={!!value}
     >
       <div className="flex justify-between gap-2 overflow-hidden">
         {wheels.map((w, i) => (
@@ -71,8 +78,8 @@ export function BirthdayStep({
             key={i}
             ariaLabel={w.label}
             label={w.label}
-            values={w.values as never}
             selected={w.current as never}
+            values={w.values as never}
             onSelect={w.onSelect as never}
           />
         ))}

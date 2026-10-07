@@ -1,5 +1,6 @@
 import { m } from "framer-motion";
 import clsx from "clsx";
+
 import { springs } from "./motion";
 
 interface OnboardingProgressBarProps {
@@ -19,23 +20,24 @@ export function OnboardingProgressBar({
   className,
 }: OnboardingProgressBarProps) {
   const progress = Math.max(0, Math.min(1, value / total));
+
   return (
     <div
-      role="progressbar"
-      aria-valuemin={0}
       aria-valuemax={total}
+      aria-valuemin={0}
       aria-valuenow={value}
       className={clsx(
         "relative h-3 w-full rounded-pill bg-surface2",
         className,
       )}
+      role="progressbar"
     >
       {/* Fill animates via scaleX (transform-only, no layout cost); the
           origin stays on the left so the bar grows from where it started. */}
       <m.div
+        animate={{ scaleX: progress }}
         className="absolute inset-y-0 left-0 w-full origin-left rounded-pill bg-accent"
         initial={{ scaleX: 0 }}
-        animate={{ scaleX: progress }}
         transition={springs.soft}
       />
     </div>

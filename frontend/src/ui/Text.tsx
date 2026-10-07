@@ -1,4 +1,5 @@
 import type { ElementType, ReactNode } from "react";
+
 import clsx from "clsx";
 
 const sizeClasses = {
@@ -19,6 +20,7 @@ interface TextProps {
 /** Thin wrapper to keep typography and colour tokens consistent. */
 export function Text({ as, kind = "subtitle", className, children }: TextProps) {
   const Component = as ?? "p";
+
   return (
     <Component className={clsx(sizeClasses[kind], className)}>{children}</Component>
   );

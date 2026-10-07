@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
+
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, m } from "framer-motion";
+
+import { writeDayPick } from "./DayContent";
+
 import { AppShell, NavItem, TabBar } from "@/ui";
 import { easings, pageVariants } from "@/ui/motion";
 import { apiErrorDetails } from "@/api/client";
 import { formatDateWithMonth, nowStartOfDay } from "@/lib/dates";
-import { writeDayPick } from "./DayContent";
 import {
   CalendarIcon,
   ForkKnifeIcon,
@@ -45,15 +48,15 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
         {planError && (
           <m.div
             key="plan-error"
-            initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
+            className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg"
             exit={{ opacity: 0, y: -16, transition: { duration: 0.16, ease: easings.smooth } }}
-            className="fixed inset-x-0 top-[max(12px,env(safe-area-inset-top,0px))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[398px] rounded-card bg-[#272727] p-4 text-on shadow-lg" role="alert"
+            initial={{ opacity: 0, y: -16 }} role="alert"
           >
             <p className="min-w-0 break-words text-bodySm text-danger" style={{ overflowWrap: "anywhere" }}>
               {planErrorSummary(planError)}
             </p>
-            <button type="button" onClick={retryPlan} className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium">
+            <button className="mt-3 min-h-11 rounded-card bg-accent px-4 text-bodySm font-medium" type="button" onClick={retryPlan}>
               Повторить
             </button>
             <details className="mt-2 text-caption text-on/70">
@@ -71,41 +74,41 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
           the tab indicator + refreshed content). */}
       <m.div
         key={screenKey(pathname)}
-        variants={pageVariants}
-        initial="hidden"
         animate="visible"
         className="flex min-h-full flex-1 flex-col"
+        initial="hidden"
+        variants={pageVariants}
       >
         <Outlet />
       </m.div>
 
       <TabBar
+        center={
+          <NavItem
+            active={chatActive}
+            icon={<ChatTabIcon />}
+            label="Чат"
+            onClick={() => navigate("/chat")}
+          />
+        }
         left={
           <button
-            type="button"
-            aria-label="Открыть сегодняшний день"
-            onClick={openToday}
             aria-current={dateActive ? "page" : undefined}
+            aria-label="Открыть сегодняшний день"
             className="flex min-h-11 min-w-[60px] flex-col items-center justify-center text-[18px] font-medium leading-5"
             style={{ color: dateActive ? "#ffffff" : "#666666" }}
+            type="button"
+            onClick={openToday}
           >
             <span>{date}</span>
             <span>{month}</span>
           </button>
         }
-        center={
-          <NavItem
-            label="Чат"
-            icon={<ChatTabIcon />}
-            active={chatActive}
-            onClick={() => navigate("/chat")}
-          />
-        }
         right={
           <NavItem
-            label="Профиль"
-            icon={<ProfileTabIcon />}
             active={profileActive}
+            icon={<ProfileTabIcon />}
+            label="Профиль"
             onClick={() => navigate("/profile")}
           />
         }
@@ -127,12 +130,14 @@ function planErrorSummary(error: Error): string {
   // Keyword detection runs on the raw technical text: the user-facing
   // message is already translated to Russian and would hide these markers.
   const details = apiErrorDetails(error).toLowerCase();
+
   if (details.includes("429") || details.includes("rate limit") || details.includes("free-models-per-day")) {
     return "ИИ-сервис временно перегружен или достигнут лимит запросов. Попробуй позже.";
   }
   if (details.includes("timeout") || details.includes("timed out")) {
     return "ИИ-сервис не ответил вовремя. Попробуй ещё раз.";
   }
+
   return "Не удалось подготовить план. Попробуй ещё раз.";
 }
 
@@ -150,17 +155,18 @@ export function PlanHeader({
   onKindChange: (k: "Food" | "Activity") => void;
 }) {
   const navigate = useNavigate();
+
   return (
     <div className="px-5 pt-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-h1 text-on">{title}</h1>
         <button
-          type="button"
           aria-label="Календарь"
-          onClick={() => navigate("/calendar")}
           className="flex h-11 w-11 items-center justify-center"
+          type="button"
+          onClick={() => navigate("/calendar")}
         >
-          <CalendarIcon size={26} color="#f08629" />
+          <CalendarIcon color="#f08629" size={26} />
         </button>
       </div>
 
@@ -180,23 +186,25 @@ function SegmentedTabs({
     { value: "Food" as const, label: "Питание", Icon: ForkKnifeIcon },
     { value: "Activity" as const, label: "Активность", Icon: null },
   ];
+
   return (
     <div className="inline-flex rounded-card bg-surface p-1">
       {items.map((it) => {
         const active = value === it.value;
+
         return (
           <button
             key={it.value}
-            type="button"
             aria-pressed={active}
-            onClick={() => onChange(it.value)}
             className={`flex min-h-10 min-w-11 items-center justify-center gap-2 rounded-card border px-4 text-bodySm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
               active
                 ? "border-accent bg-transparent text-on shadow-[0_0_6px_rgba(240,134,41,0.4)]"
                 : "border-transparent bg-transparent text-on"
             }`}
+            type="button"
+            onClick={() => onChange(it.value)}
           >
-            {it.Icon && <it.Icon size={20} color="currentColor" />}
+            {it.Icon && <it.Icon color="currentColor" size={20} />}
             <span>{it.label}</span>
           </button>
         );

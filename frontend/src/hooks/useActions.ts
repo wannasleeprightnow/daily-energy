@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createAction, listActions } from "@/api/plans";
 import type { ActionRequest, ActionResponse, ActionType } from "@/api/types";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { createAction, listActions } from "@/api/plans";
 
 export function actionKeys(
   utgid: number,
@@ -26,6 +28,7 @@ export function useActions(
 /** POST /api/users/{utgid}/actions */
 export function useCreateAction(utgid: number) {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (action: ActionRequest) => createAction(utgid, action),
     onSuccess: () =>

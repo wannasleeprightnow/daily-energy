@@ -1,11 +1,23 @@
+import type { ActionType } from "@/api/types";
+
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { m } from "framer-motion";
-import type { ActionType } from "@/api/types";
+
+import {
+  ActionList,
+  AiAdviceCard,
+  CardLoading,
+  PlanLoading,
+  ProgressRingBlock,
+} from "./PlanContent";
+import { AddEntrySheet } from "./AddEntrySheet";
+
 import { springs } from "@/ui/motion";
 import { useActions } from "@/hooks/useActions";
 import { useIsEnsuringPlan, useIsRefreshingFuturePlan, usePlans } from "@/hooks/usePlans";
 import { useUser } from "@/hooks/useUser";
+import { getPlanProfileKey } from "@/lib/profile";
 import calendarIcon from "@/assets/icons/calendar.svg";
 import foodIcon from "@/assets/icons/food.svg";
 import plusIcon from "@/assets/icons/plus.svg";
@@ -16,14 +28,7 @@ import {
   formatShortDate,
   nowStartOfDay,
 } from "@/lib/dates";
-import {
-  ActionList,
-  AiAdviceCard,
-  CardLoading,
-  PlanLoading,
-  ProgressRingBlock,
-} from "./PlanContent";
-import { AddEntrySheet } from "./AddEntrySheet";
+
 
 interface DayContentProps {
   utgid: number;
@@ -49,15 +54,20 @@ export function DayContent({ utgid, mode }: DayContentProps) {
   const stored = readDayFromStorage(utgid);
   const anchor = useMemo(() => {
     const today = nowStartOfDay();
+
     if (mode === "today") return today;
     if (stored && stored.mode !== "today") return stored.date;
     if (mode === "history") {
       const d = new Date(today);
+
       d.setDate(d.getDate() - 1);
+
       return d;
     }
     const d = new Date(today);
+
     d.setDate(d.getDate() + 1);
+
     return d;
   }, [mode, stored, utgid]);
 
@@ -74,9 +84,7 @@ export function DayContent({ utgid, mode }: DayContentProps) {
   );
   const isEnsuringPlan = useIsEnsuringPlan(utgid);
   const { data: user } = useUser(utgid);
-  const profileKey = user
-    ? JSON.stringify([user.gender, user.date_of_birth, user.weight, user.height, user.goal, user.physical_activity])
-    : "";
+  const profileKey = getPlanProfileKey(user);
   const isRefreshingForProfile = useIsRefreshingFuturePlan(utgid, profileKey);
   const today = nowStartOfDay();
   const lastPlanDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 6);
@@ -110,14 +118,14 @@ export function DayContent({ utgid, mode }: DayContentProps) {
   return (
     <div className="flex min-h-full flex-col px-6 pt-5">
       <DayHeader
-        title={title}
         kind={activityType}
+        title={title}
+        onCalendar={() => navigate("/calendar")}
         onKindChange={(k) =>
           navigate(`/${mode}/${k === "Food" ? "food" : "activity"}`, {
             replace: false,
           })
         }
-        onCalendar={() => navigate("/calendar")}
       />
 
       <div className="mt-5 flex flex-1 flex-col gap-4 pb-24">
@@ -128,17 +136,17 @@ export function DayContent({ utgid, mode }: DayContentProps) {
             <>
               <div className="flex items-center justify-around gap-3">
                 <img
-                  src={isActivity ? runningIcon : foodIcon}
                   alt=""
                   aria-hidden="true"
                   className={isActivity ? "h-[100px] w-[75px] object-contain" : "h-[100px] w-[67px] object-contain"}
+                  src={isActivity ? runningIcon : foodIcon}
                 />
                 <ProgressRingBlock
-                  remaining={remaining}
-                  target={target}
-                  isLoading={false}
-                  size={150}
                   showConsumedProgress
+                  isLoading={false}
+                  remaining={remaining}
+                  size={150}
+                  target={target}
                 />
               </div>
               {recommendation && (
@@ -151,21 +159,21 @@ export function DayContent({ utgid, mode }: DayContentProps) {
         </section>
         <section className="rounded-card bg-[#272727] p-[14px]">
           <HistorySection
+            compact
             actions={actions}
             actionsLoading={actionsLoading}
             onAdd={() => setAddOpen(true)}
-            compact
           />
         </section>
       </div>
 
       <AddEntrySheet
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onCalendar={() => navigate("/calendar")}
-        utgid={utgid}
-        type={activityType}
         date={anchor}
+        open={addOpen}
+        type={activityType}
+        utgid={utgid}
+        onCalendar={() => navigate("/calendar")}
+        onClose={() => setAddOpen(false)}
       />
     </div>
   );
@@ -189,22 +197,22 @@ function HistorySection({
           История
         </h2>
         <button
-          type="button"
           aria-label="Добавить"
-          onClick={onAdd}
           className="flex h-10 w-10 items-center justify-center"
+          type="button"
+          onClick={onAdd}
         >
-          <img src={plusIcon} alt="" aria-hidden="true" className={compact ? "h-[29px] w-[29px]" : "h-[22px] w-[22px]"} />
+          <img alt="" aria-hidden="true" className={compact ? "h-[29px] w-[29px]" : "h-[22px] w-[22px]"} src={plusIcon} />
         </button>
       </div>
       <div
-        className={compact ? "activity-history-scroll max-h-[220px] overflow-y-auto overscroll-contain pr-2" : ""}
         aria-label={compact ? "История за день" : undefined}
+        className={compact ? "activity-history-scroll max-h-[220px] overflow-y-auto overscroll-contain pr-2" : ""}
       >
         {actionsLoading ? (
           <CardLoading />
         ) : (
-          <ActionList actions={actions} emptyLabel="Тут пока ничего:)" compact={compact} />
+          <ActionList actions={actions} compact={compact} emptyLabel="Тут пока ничего:)" />
         )}
       </div>
     </div>
@@ -229,12 +237,12 @@ function DayHeader({
           {title}
         </h1>
         <button
-          type="button"
           aria-label="Календарь"
-          onClick={onCalendar}
           className="flex h-11 w-11 shrink-0 items-center justify-center"
+          type="button"
+          onClick={onCalendar}
         >
-          <img src={calendarIcon} alt="" aria-hidden="true" className="h-[36px] w-[36px]" />
+          <img alt="" aria-hidden="true" className="h-[36px] w-[36px]" src={calendarIcon} />
         </button>
       </div>
       <ToggleTabs value={kind} onChange={onKindChange} />
@@ -253,26 +261,28 @@ function ToggleTabs({
     { value: "Activity", label: "Активность" },
     { value: "Food", label: "Питание" },
   ];
+
   return (
     <div className="inline-flex rounded-card bg-surface p-1">
       {items.map((it) => {
         const active = value === it.value;
+
         return (
           <button
             key={it.value}
-            type="button"
             aria-pressed={active}
-            onClick={() => onChange(it.value)}
             className="relative min-h-11 rounded-card px-[18px] text-[18px] font-medium text-on"
+            type="button"
+            onClick={() => onChange(it.value)}
           >
             {/* Sliding active indicator: a single element moves between tabs
                 via layoutId — transform-only, GPU-composited. */}
             {active && (
               <m.span
-                layoutId="day-tabs-indicator"
-                className="absolute inset-0 rounded-card bg-[#303030] ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
-                transition={springs.snappy}
                 aria-hidden
+                className="absolute inset-0 rounded-card bg-[#303030] ring-1 ring-[#a35b22] shadow-[0_0_5px_rgba(240,134,41,0.7)]"
+                layoutId="day-tabs-indicator"
+                transition={springs.snappy}
               />
             )}
             <span className="relative">{it.label}</span>
@@ -291,11 +301,13 @@ interface StoredDay {
 function readDayFromStorage(utgid: number): StoredDay | null {
   try {
     const raw = window.localStorage.getItem(`daily-energy:day:${utgid}`);
+
     if (!raw) return null;
     const { timestamp, mode } = JSON.parse(raw) as {
       timestamp: number;
       mode: string;
     };
+
     return { date: new Date(timestamp * 1000), mode };
   } catch {
     return null;

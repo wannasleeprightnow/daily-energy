@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { Button } from "@/ui";
 import { easings, fadeInUp, springs } from "@/ui/motion";
 import { useUser } from "@/hooks/useUser";
 import { getInitData, getTgUser } from "@/lib/telegram";
 import { API_URL } from "@/constants";
 import logo from "@/assets/logo.png";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 interface Message {
   id: number;
@@ -55,6 +56,7 @@ export function ChatPage() {
 
   useEffect(() => {
     const endpoint = new URL("/api/ws/chat", API_URL || window.location.origin);
+
     endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
     const initData = getInitData();
     const protocols = initData
@@ -87,6 +89,7 @@ export function ChatPage() {
       const socket = protocols
         ? new WebSocket(endpoint, protocols)
         : new WebSocket(endpoint);
+
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -101,8 +104,10 @@ export function ChatPage() {
         if (disposed || socketRef.current !== socket) return;
         const raw = String(event.data);
         let response: ServerErrorMessage | null = null;
+
         try {
           const parsed = JSON.parse(raw) as ServerErrorMessage;
+
           if (parsed?.type === "error") response = parsed;
         } catch {
           // Successful assistant messages are plain text.
@@ -114,6 +119,7 @@ export function ChatPage() {
           setRetryText(retryTextRef.current);
           inFlightTextRef.current = null;
           setError(response.message || CHAT_ERROR);
+
           return;
         }
 
@@ -135,21 +141,25 @@ export function ChatPage() {
         setConnectionState("reconnecting");
         setShowConnectionBanner(true);
         const pendingRetry = retryTextRef.current ?? inFlightTextRef.current;
+
         retryTextRef.current = pendingRetry;
         setRetryText((current) => current ?? pendingRetry);
         setError("Соединение прервалось. Переподключаюсь…");
         const delay = Math.min(1000 * 2 ** retryAttempt, 10000);
+
         retryAttempt += 1;
         retryTimer = window.setTimeout(connect, delay);
       };
     };
 
     retryTimer = window.setTimeout(connect, 0);
+
     return () => {
       disposed = true;
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
       window.clearTimeout(bannerTimer);
       const socket = socketRef.current;
+
       socketRef.current = null;
       socket?.close(1000, "component unmounted");
     };
@@ -163,13 +173,16 @@ export function ChatPage() {
     (value: string, isRetry = false) => {
       const text = value.trim();
       const socket = socketRef.current;
+
       if (!text || busy) return;
       if (data === undefined && !profileLoadFailed && tgUser?.id) {
         setError("Загружаю твой профиль. Попробуй отправить сообщение ещё раз через пару секунд.");
+
         return;
       }
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         setError("Подключение восстанавливается. Сообщение можно будет отправить ещё раз.");
+
         return;
       }
 
@@ -189,6 +202,7 @@ export function ChatPage() {
         const profile = !profileContextSentRef.current && data
           ? getChatProfileContext(data)
           : undefined;
+
         socket.send(JSON.stringify({
           type: "chat_message",
           message: text,
@@ -220,7 +234,7 @@ export function ChatPage() {
       }}
     >
       <header className="flex h-[68px] shrink-0 items-center justify-center gap-2 pt-2">
-        <img src={logo} alt="" aria-hidden="true" className="block h-10 w-8 shrink-0 object-contain" />
+        <img alt="" aria-hidden="true" className="block h-10 w-8 shrink-0 object-contain" src={logo} />
         <span className="block text-[25px] font-medium leading-none text-on">Daily Energy</span>
       </header>
 
@@ -228,12 +242,12 @@ export function ChatPage() {
         {showConnectionBanner && connectionState !== "connected" && (
           <m.div
             key="connection-banner"
-            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
+            className="absolute inset-x-0 top-[76px] z-20 mx-auto flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3 shadow-lg"
             exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
             // Floating overlay below the header: never pushes or shifts the
             // chat content underneath.
-            className="absolute inset-x-0 top-[76px] z-20 mx-auto flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3 shadow-lg"
+            initial={{ opacity: 0, y: -12 }}
           >
             <p className="text-[14px] leading-5 text-on" role="status">
               {connectionState === "connecting"
@@ -243,8 +257,8 @@ export function ChatPage() {
                   : "Нет соединения с чатом."}
             </p>
             <Button
-              onClick={() => setConnectionAttempt((attempt) => attempt + 1)}
               className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+              onClick={() => setConnectionAttempt((attempt) => attempt + 1)}
             >
               Переподключить
             </Button>
@@ -254,10 +268,10 @@ export function ChatPage() {
 
       {!hasMessages && (
         <m.section
-          variants={fadeInUp}
-          initial="hidden"
           animate="visible"
           className="mx-auto flex w-[76%] flex-1 flex-col justify-center"
+          initial="hidden"
+          variants={fadeInUp}
         >
           <h1 className="text-center text-[24px] font-medium leading-[30px] text-accent">
             Привет, {userName}!
@@ -279,19 +293,19 @@ export function ChatPage() {
           }}
         >
           {messages.map((message, index) => (
-            <Bubble key={message.id} message={message} index={index} />
+            <Bubble key={message.id} index={index} message={message} />
           ))}
           <AnimatePresence>
             {busy && (
               <m.div
                 key="typing"
-                initial={{ opacity: 0, y: 10, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1, transition: springs.soft }}
-                exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }}
-                className="mr-auto flex items-center gap-2 rounded-card bg-[#303030] px-4 py-3 text-[15px] text-on/65" role="status" aria-label="Рафик печатает"
+                aria-label="Рафик печатает"
+                className="mr-auto flex items-center gap-2 rounded-card bg-[#303030] px-4 py-3 text-[15px] text-on/65"
+                exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }} initial={{ opacity: 0, y: 10, scale: 0.97 }} role="status"
               >
                 <span>Рафик печатает</span>
-                <span className="flex items-center gap-1" aria-hidden="true">
+                <span aria-hidden="true" className="flex items-center gap-1">
                   {[0, 1, 2].map((dot) => (
                     <span
                       key={dot}
@@ -310,19 +324,19 @@ export function ChatPage() {
         {error && (
           <m.div
             key="chat-error"
-            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
-            exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
             className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3"
+            exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
+            initial={{ opacity: 0, y: -12 }}
           >
-            <p role="alert" className="text-[14px] leading-5 text-on">
+            <p className="text-[14px] leading-5 text-on" role="alert">
               {error}
             </p>
             {retryText && (
               <Button
-                onClick={retry}
-                disabled={busy || connectionState !== "connected"}
                 className="min-h-9 shrink-0 rounded-full px-3 text-[13px]"
+                disabled={busy || connectionState !== "connected"}
+                onClick={retry}
               >
                 Повторить
               </Button>
@@ -333,13 +347,13 @@ export function ChatPage() {
 
       <div className={hasMessages ? "mt-auto shrink-0 px-[8%] pb-10 pt-6" : "mx-auto mt-8 w-[84%] shrink-0 pb-8"}>
         <ChatInput
+          busy={busy}
+          disabled={connectionState !== "connected"}
+          expanded={!hasMessages}
+          placeholder="Пиши сюда..."
           value={draft}
           onChange={setDraft}
           onSend={send}
-          disabled={connectionState !== "connected"}
-          busy={busy}
-          placeholder="Пиши сюда..."
-          expanded={!hasMessages}
         />
       </div>
     </div>
@@ -348,9 +362,9 @@ export function ChatPage() {
 
 function Bubble({ message, index = 0 }: { message: Message; index?: number }) {
   const isUser = message.role === "user";
+
   return (
     <m.div
-      initial={{ opacity: 0, y: 14, scale: 0.97 }}
       animate={{
         opacity: 1,
         y: 0,
@@ -361,10 +375,10 @@ function Bubble({ message, index = 0 }: { message: Message; index?: number }) {
       className={`max-w-[85%] whitespace-pre-wrap break-words rounded-card px-3 py-3 text-[16px] leading-[21px] ${
         isUser ? "ml-auto bg-black text-on" : "mr-auto bg-[#303030] text-on"
       }`}
+      initial={{ opacity: 0, y: 14, scale: 0.97 }}
     >
       {isUser ? message.text : (
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
           components={{
             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
             ul: ({ children }) => <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">{children}</ul>,
@@ -373,11 +387,12 @@ function Bubble({ message, index = 0 }: { message: Message; index?: number }) {
             h1: ({ children }) => <h1 className="mb-2 text-lg font-semibold">{children}</h1>,
             h2: ({ children }) => <h2 className="mb-2 text-base font-semibold">{children}</h2>,
             h3: ({ children }) => <h3 className="mb-2 font-semibold">{children}</h3>,
-            a: ({ children, href }) => <a className="text-orange-300 underline" href={href} target="_blank" rel="noreferrer">{children}</a>,
+            a: ({ children, href }) => <a className="text-orange-300 underline" href={href} rel="noreferrer" target="_blank">{children}</a>,
             code: ({ children }) => <code className="rounded bg-black/30 px-1 py-0.5 font-mono text-[0.9em]">{children}</code>,
             pre: ({ children }) => <pre className="mb-2 overflow-x-auto rounded-lg bg-black/35 p-2 last:mb-0">{children}</pre>,
             blockquote: ({ children }) => <blockquote className="border-l-2 border-orange-400/70 pl-3 text-on/80">{children}</blockquote>,
           }}
+          remarkPlugins={[remarkGfm]}
         >
           {message.text}
         </ReactMarkdown>
@@ -415,20 +430,20 @@ function ChatInput({
   return (
     <div className="flex items-center gap-2">
       <textarea
+        aria-label="Сообщение для Рафика"
+        className={`min-w-0 flex-1 resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[80px]" : "min-h-[58px] max-h-28"}`}
+        disabled={disabled}
+        placeholder={placeholder}
+        rows={expanded ? 3 : 2}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKey}
-        placeholder={placeholder}
-        aria-label="Сообщение для Рафика"
-        disabled={disabled}
-        rows={expanded ? 3 : 2}
-        className={`min-w-0 flex-1 resize-none rounded-[17px] bg-black px-4 py-3 text-[16px] leading-[21px] text-on placeholder:text-on/35 focus:outline-none disabled:opacity-80 ${expanded ? "h-[80px]" : "min-h-[58px] max-h-28"}`}
       />
       <Button
-        onClick={onSend}
-        disabled={!canSend}
         aria-label="Отправить"
         className="h-[57px] w-[66px] shrink-0 text-h2"
+        disabled={!canSend}
+        onClick={onSend}
       >
         →
       </Button>
@@ -439,7 +454,9 @@ function ChatInput({
 function toBase64Url(value: string): string {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
+
   for (const byte of bytes) binary += String.fromCharCode(byte);
+
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
@@ -450,6 +467,7 @@ function getChatProfileContext(user: NonNullable<ReturnType<typeof useUser>["dat
   const birthdayHasPassed =
     now.getMonth() > birthDate.getMonth() ||
     (now.getMonth() === birthDate.getMonth() && now.getDate() >= birthDate.getDate());
+
   if (!birthdayHasPassed) age -= 1;
 
   return {

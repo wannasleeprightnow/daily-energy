@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import clsx from "clsx";
 
 interface OptionButtonProps {
@@ -20,8 +21,6 @@ export function OptionButton({
 }: OptionButtonProps) {
   return (
     <button
-      type="button"
-      onClick={onClick}
       aria-pressed={selected}
       className={clsx(
         "flex min-h-[68px] w-full items-center gap-3 rounded-card px-4 text-left text-body",
@@ -32,6 +31,8 @@ export function OptionButton({
           : "border-transparent bg-surface text-on",
         className,
       )}
+      type="button"
+      onClick={onClick}
     >
       {children}
     </button>

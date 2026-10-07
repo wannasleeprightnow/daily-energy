@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, m } from "framer-motion";
+
+import { WEEKDAYS_RU } from "./labels";
+
 import { GhostButton } from "@/ui";
 import { monthVariants } from "@/ui/motion";
 import {
@@ -8,7 +11,6 @@ import {
   CrossIcon,
 } from "@/ui/icons";
 import { MONTHS_RU } from "@/constants";
-import { WEEKDAYS_RU } from "./labels";
 import { writeDayPick } from "@/features/main/DayContent";
 import { haptic } from "@/lib/telegram";
 
@@ -59,6 +61,7 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
       date.getTime() <
       new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const mode: "history" | "plan" = isPast ? "history" : "plan";
+
     writeDayPick(utgid, date, mode);
     void navigate(`/${mode}/food`);
     haptic("success");
@@ -71,7 +74,7 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
           {MONTHS_RU[view.getMonth()]} {view.getFullYear()}
         </h1>
 
-        <GhostButton onClick={() => navigate(-1)} aria-label="Закрыть">
+        <GhostButton aria-label="Закрыть" onClick={() => navigate(-1)}>
           <CrossIcon size={24} />
         </GhostButton>
       </div>
@@ -88,15 +91,15 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
           ))}
         </div>
 
-        <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <AnimatePresence custom={direction} initial={false} mode="wait">
           <m.div
             key={`${view.getFullYear()}-${view.getMonth()}`}
-            custom={direction}
-            variants={monthVariants}
-            initial="enter"
             animate="center"
-            exit="exit"
             className="grid grid-cols-7 gap-y-2"
+            custom={direction}
+            exit="exit"
+            initial="enter"
+            variants={monthVariants}
           >
             {days.map((cell, i) => {
               if (!cell) return <span key={`empty-${i}`} aria-hidden />;
@@ -104,14 +107,15 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
                 selected.year === cell.getFullYear() &&
                 selected.month === cell.getMonth() &&
                 selected.day === cell.getDate();
+
               return (
                 <button
                   key={cell.toISOString()}
-                  type="button"
                   aria-label={cell.toDateString()}
                   aria-pressed={isSelected}
-                  onClick={() => pickDay(cell)}
                   className="flex h-11 items-center justify-center transition-transform duration-150 active:scale-90"
+                  type="button"
+                  onClick={() => pickDay(cell)}
                 >
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-full border text-[14px] font-medium tabular-nums ${
@@ -129,13 +133,13 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
         </AnimatePresence>
 
         <div className="mt-4 flex items-center justify-between">
-          <GhostButton onClick={() => shiftMonth(-1)} aria-label="Предыдущий месяц">
+          <GhostButton aria-label="Предыдущий месяц" onClick={() => shiftMonth(-1)}>
             <ArrowLeftIcon size={27} />
           </GhostButton>
           <GhostButton
-            onClick={() => shiftMonth(1)}
             aria-label="Следующий месяц"
             className="rotate-180"
+            onClick={() => shiftMonth(1)}
           >
             <ArrowLeftIcon size={27} />
           </GhostButton>
@@ -158,8 +162,10 @@ export function monthGrid(view: Date): (Date | null)[] {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const cells: (Date | null)[] = [];
+
   for (let i = 0; i < lead; i += 1) cells.push(null);
   for (let d = 1; d <= daysInMonth; d += 1) cells.push(new Date(year, month, d));
   while (cells.length % 7 !== 0) cells.push(null);
+
   return cells;
 }

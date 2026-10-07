@@ -21,6 +21,7 @@ function webapp() {
 /** The tg user, if any. */
 export function getTgUser(): TelegramUser | null {
   const u = webapp()?.initDataUnsafe?.user;
+
   return u ?? null;
 }
 
@@ -45,9 +46,11 @@ export function setHeaderColor(color: string): void {
 export function attachBack(cb: () => void): () => void {
   const wb = webapp();
   const bb = wb?.BackButton;
+
   if (!bb) return () => {};
   bb.show();
   bb.onClick(cb);
+
   return () => {
     bb.hide();
     bb.offClick?.(cb);
@@ -57,10 +60,12 @@ export function attachBack(cb: () => void): () => void {
 export function setMainButton(text: string, onClick: () => void): () => void {
   const wb = webapp();
   const mb = wb?.MainButton;
+
   if (!mb) return () => {};
   mb.setText(text);
   mb.show();
   mb.onClick(onClick);
+
   return () => {
     mb.hide();
   };
@@ -75,6 +80,7 @@ export function haptic(type: "success" | "error" | "warning") {
         notificationOccurred?: (kind: "error" | "success" | "warning") => void;
       };
     })?.HapticFeedback;
+
     feedback?.notificationOccurred?.(type);
   } catch {
     // Unsupported Telegram clients can ignore haptic feedback.

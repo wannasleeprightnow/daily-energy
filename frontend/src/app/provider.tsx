@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+
 import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
+
 import { MotionProvider } from "@/ui/motion";
 import { setAuthHeader } from "@/api/client";
 import { getInitData } from "@/lib/telegram";
@@ -23,6 +25,7 @@ const queryClient = new QueryClient({
 /** Attach the Telegram auth header once at bootstrap. */
 function initAuth() {
   const initData = getInitData();
+
   if (initData) setAuthHeader(initData);
 }
 
@@ -32,6 +35,7 @@ function initAuth() {
  */
 export function Provider({ children }: { children: ReactNode }) {
   initAuth();
+
   return (
     <QueryClientProvider client={queryClient}>
       <MotionProvider>{children}</MotionProvider>

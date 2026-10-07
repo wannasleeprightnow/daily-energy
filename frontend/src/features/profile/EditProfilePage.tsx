@@ -1,6 +1,8 @@
+import type { Goal, PhysicalActivity } from "@/api/types";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Goal, PhysicalActivity } from "@/api/types";
+
 import { GhostButton, Input, OptionButton, Spinner, Text, WheelColumn } from "@/ui";
 import { ArrowLeftIcon, CheckIcon } from "@/ui/icons";
 import { useUpdateUser, useUser } from "@/hooks/useUser";
@@ -53,6 +55,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const current = useMemo<Draft | null>(() => {
     if (draft) return draft;
     if (!user) return null;
+
     return {
       name: user.name,
       date_of_birth: user.date_of_birth,
@@ -71,7 +74,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
 
   if (isLoading || !current || !user) {
     return (
-      <div className="flex flex-1 items-center justify-center" aria-live="polite">
+      <div aria-live="polite" className="flex flex-1 items-center justify-center">
         <Spinner size={40} />
       </div>
     );
@@ -84,6 +87,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   const year = birthday.getFullYear();
   const updateBirthday = (d: number, m: number, y: number) => {
     const date = new Date(y, m, Math.min(d, daysInMonth(y, m)));
+
     patch({ date_of_birth: Math.floor(date.getTime() / 1000) });
   };
 
@@ -119,36 +123,36 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
   return (
     <div className="flex flex-col px-5 pt-6">
       <div className="mb-4 flex items-center justify-between">
-        <GhostButton onClick={() => navigate(-1)} aria-label="Назад" className="-ml-2 text-on">
+        <GhostButton aria-label="Назад" className="-ml-2 text-on" onClick={() => navigate(-1)}>
           <ArrowLeftIcon size={27} />
         </GhostButton>
         <GhostButton
-          onClick={save}
           aria-label="Сохранить"
-          disabled={updateUser.isPending}
           className="text-[#ff7700]"
+          disabled={updateUser.isPending}
+          onClick={save}
         >
           {updateUser.isPending ? <Spinner size={22} /> : <CheckIcon size={27} />}
         </GhostButton>
       </div>
 
       <div className="mx-auto flex w-full max-w-[430px] flex-col gap-7 px-1 pb-8">
-          <label className="block">
+          <label className="block" htmlFor="profile-name">
             <span className={labelClass}>Имя</span>
             <Input
+              autoComplete="name"
+              id="profile-name"
+              maxLength={50}
               value={current.name}
               onChange={(event) => patch({ name: event.target.value })}
-              aria-label="Имя"
-              autoComplete="name"
-              maxLength={50}
             />
           </label>
 
           <section aria-label="Рост">
             <h2 className={labelClass}>Рост</h2>
             <MeasurementPicker
-              value={current.height}
               unit="см"
+              value={current.height}
               values={HEIGHTS}
               onChange={(height) => patch({ height })}
             />
@@ -157,8 +161,8 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
           <section aria-label="Вес">
             <h2 className={labelClass}>Вес</h2>
             <MeasurementPicker
-              value={current.weight}
               unit="кг"
+              value={current.weight}
               values={WEIGHTS}
               onChange={(weight) => patch({ weight })}
             />
@@ -170,29 +174,29 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
               <WheelColumn
                 ariaLabel="День рождения"
                 label="День"
-                values={DAYS}
                 selected={day}
-                onSelect={(value) => updateBirthday(value, month, year)}
-                viewportClassName="w-full"
                 valueClassName="text-[22px]"
+                values={DAYS}
+                viewportClassName="w-full"
+                onSelect={(value) => updateBirthday(value, month, year)}
               />
               <WheelColumn
                 ariaLabel="Месяц рождения"
                 label="Месяц"
-                values={MONTHS_RU}
                 selected={MONTHS_RU[month]}
-                onSelect={(value) => updateBirthday(day, MONTHS_RU.indexOf(value), year)}
-                viewportClassName="w-full"
                 valueClassName="truncate text-[clamp(15px,4.8vw,22px)]"
+                values={MONTHS_RU}
+                viewportClassName="w-full"
+                onSelect={(value) => updateBirthday(day, MONTHS_RU.indexOf(value), year)}
               />
               <WheelColumn
                 ariaLabel="Год рождения"
                 label="Год"
-                values={Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i)}
                 selected={year}
-                onSelect={(value) => updateBirthday(day, month, value)}
-                viewportClassName="w-full"
                 valueClassName="text-[22px]"
+                values={Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i)}
+                viewportClassName="w-full"
+                onSelect={(value) => updateBirthday(day, month, value)}
               />
             </div>
           </section>
@@ -203,9 +207,9 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
               {GOAL_OPTIONS.map((goal) => (
                 <OptionButton
                   key={goal.value}
+                  className="min-h-[64px] justify-between"
                   selected={current.goal === goal.value}
                   onClick={() => patch({ goal: goal.value })}
-                  className="min-h-[64px] justify-between"
                 >
                   <span>{goal.label}</span><span aria-hidden>{goal.emoji}</span>
                 </OptionButton>
@@ -219,9 +223,9 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
               {ACTIVITY_OPTIONS.map((activity) => (
                 <OptionButton
                   key={activity.value}
+                  className="min-h-[76px]"
                   selected={current.physical_activity === activity.value}
                   onClick={() => patch({ physical_activity: activity.value })}
-                  className="min-h-[76px]"
                 >
                   <span className="flex flex-col gap-1">
                     <span className="text-[20px] font-medium">{activity.title}</span>
@@ -233,7 +237,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
           </section>
 
         {updateUser.isError && (
-          <Text kind="small" className="mt-4 text-center text-danger">
+          <Text className="mt-4 text-center text-danger" kind="small">
             {apiErrorMessage(updateUser.error)}
           </Text>
         )}
@@ -258,10 +262,10 @@ function MeasurementPicker({
       <WheelColumn
         ariaLabel={unit === "см" ? "Рост в сантиметрах" : "Вес в килограммах"}
         label={unit}
-        values={values}
         selected={value}
-        onSelect={onChange}
+        values={values}
         viewportClassName="w-[110px]"
+        onSelect={onChange}
       />
     </div>
   );

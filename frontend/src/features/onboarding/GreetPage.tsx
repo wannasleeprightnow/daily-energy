@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { m } from "framer-motion";
+
 import { AppShell, Button, Text } from "@/ui";
 import { durations, easings, springs } from "@/ui/motion";
 import { colors } from "@/design/tokens";
@@ -21,45 +22,45 @@ export function GreetPage({ showGo = true }: { showGo?: boolean }) {
       >
         {/* Logo */}
         <m.img
-          src={logo}
           alt="Daily Energy"
-          width={168}
-          height={168}
-          decoding="async"
-          className="mb-8"
-          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
+          className="mb-8"
+          decoding="async"
+          height={168}
+          initial={{ opacity: 0, scale: 0.85 }}
+          src={logo}
           transition={springs.soft}
+          width={168}
         />
 
         <m.div
-          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 16 }}
           transition={{ delay: 0.08, duration: durations.normal, ease: easings.out }}
         >
-          <Text kind="title" className="mb-2">
+          <Text className="mb-2" kind="title">
             Привет! Мы — Daily Energy
           </Text>
         </m.div>
         <m.div
-          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 16 }}
           transition={{ delay: 0.16, duration: durations.normal, ease: easings.out }}
         >
-          <Text kind="subtitle" className="max-w-[260px] leading-relaxed text-on/80">
+          <Text className="max-w-[260px] leading-relaxed text-on/80" kind="subtitle">
             Твой персональный гид в мире здоровья.
           </Text>
         </m.div>
 
         {showGo && (
           <m.div
-            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 16 }}
             transition={{ delay: 0.24, duration: durations.normal, ease: easings.out }}
           >
             <Button
-              onClick={() => navigate("/onboarding")}
               className="mt-10 px-12 py-4 text-h2"
+              onClick={() => navigate("/onboarding")}
             >
               Go
             </Button>
