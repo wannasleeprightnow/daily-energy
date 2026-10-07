@@ -9,7 +9,7 @@ CONFIGURE := ./scripts/configure.sh
 help:
 	@echo "Daily Energy — production commands:"
 	@echo "  make configure-prod   Prepare .env from .env.example"
-	@echo "  make up               Build and start the production stack"
+	@echo "  make up               Build images sequentially and start production"
 	@echo "  make down             Stop the stack and remove database volumes"
 	@echo "  make stop             Stop the stack and preserve database volumes"
 	@echo "  make logs             Follow production logs"
@@ -23,8 +23,8 @@ configure: configure-prod
 configure-prod:
 	$(CONFIGURE) prod
 
-up: configure-prod
-	$(DC) up --build -d --remove-orphans
+up: build
+	$(DC) up -d --remove-orphans
 
 down:
 	$(DC) down -v --remove-orphans
@@ -42,7 +42,8 @@ ps:
 	$(DC) ps
 
 build: configure-prod
-	$(DC) build
+	$(DC) --parallel 1 build backend-prod
+	$(DC) --parallel 1 build frontend-prod
 
 prod: up
 
