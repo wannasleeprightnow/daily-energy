@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, m } from "framer-motion";
 import { AppShell, NavItem, TabBar } from "@/ui";
 import { easings, pageVariants } from "@/ui/motion";
-import { apiErrorMessage } from "@/api/client";
+import { apiErrorDetails } from "@/api/client";
 import { formatDateWithMonth, nowStartOfDay } from "@/lib/dates";
 import { writeDayPick } from "./DayContent";
 import {
@@ -40,7 +40,7 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
   };
 
   return (
-    <AppShell className="pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
+    <AppShell className="pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
       <AnimatePresence>
         {planError && (
           <m.div
@@ -59,7 +59,7 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
             <details className="mt-2 text-caption text-on/70">
               <summary className="min-h-11 cursor-pointer content-center">Подробности ошибки</summary>
               <p className="max-h-24 overflow-y-auto break-words whitespace-pre-wrap" style={{ overflowWrap: "anywhere" }}>
-                {apiErrorMessage(planError)}
+                {apiErrorDetails(planError)}
               </p>
             </details>
           </m.div>
@@ -124,7 +124,9 @@ function screenKey(pathname: string): string {
 }
 
 function planErrorSummary(error: Error): string {
-  const details = apiErrorMessage(error).toLowerCase();
+  // Keyword detection runs on the raw technical text: the user-facing
+  // message is already translated to Russian and would hide these markers.
+  const details = apiErrorDetails(error).toLowerCase();
   if (details.includes("429") || details.includes("rate limit") || details.includes("free-models-per-day")) {
     return "ИИ-сервис временно перегружен или достигнут лимит запросов. Попробуй позже.";
   }

@@ -64,6 +64,7 @@ export default function App() {
   const location = useLocation();
   const tgId = getTgId();
   const tgUser = getTgUser();
+  const avatarUrl = tgUser?.photo_url?.trim() ?? "";
 
   useEffect(() => {
     setHeaderColor(colors.bg);
@@ -71,6 +72,15 @@ export default function App() {
       void navigate("/", { replace: true });
     }
   }, [tgUser, location.pathname, navigate]);
+
+  // Warm the browser cache with the Telegram avatar while the loading screen
+  // is up, so the profile renders it instantly instead of popping in later.
+  useEffect(() => {
+    if (!avatarUrl) return;
+    const img = new Image();
+    img.decoding = "async";
+    img.src = avatarUrl;
+  }, [avatarUrl]);
 
   if (!tgUser || tgId === null) {
     return (
