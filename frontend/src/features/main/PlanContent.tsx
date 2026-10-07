@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+import type { ActionResponse } from "@/api/types";
+
 import { m } from "framer-motion";
+
 import { AnimatedNumber, EmptyState, ProgressRing, Spinner } from "@/ui";
 import { fadeInUp, listItemVariants } from "@/ui/motion";
-import type { ActionResponse } from "@/api/types";
 import { formatClock } from "@/lib/dates";
 
 /**
@@ -29,11 +31,11 @@ export function ActionRow({
 }) {
   return (
     <m.li
-      variants={listItemVariants}
-      custom={index}
-      initial="hidden"
       animate="visible"
       className={`flex w-full items-center gap-3 rounded-card ${compact ? "min-h-[40px] bg-surface2 px-[14px] py-1.5" : "min-h-[40px] bg-[#383838] px-4 py-2"}`}
+      custom={index}
+      initial="hidden"
+      variants={listItemVariants}
     >
       <span className={`${compact ? "w-[46px] text-[16px] leading-5" : "w-[52px] text-bodySm"} shrink-0 text-on/80 tabular-nums`}>
         {formatClock(action.date)}
@@ -61,6 +63,7 @@ export function ActionList({
   if (!actions?.length) {
     return <EmptyState>{emptyLabel}</EmptyState>;
   }
+
   return (
     <ul className={`flex flex-col ${compact ? "gap-2 px-0 py-1.5" : "gap-2 p-4"}`}>
       {actions.map((a, index) => (
@@ -88,13 +91,14 @@ export function ProgressRingBlock({
 }) {
   const fraction = remaining === null || !target ? 0 : remaining / target;
   const progress = Math.max(0, Math.min(1, showConsumedProgress ? 1 - fraction : fraction));
+
   return (
     <ProgressRing
+      lowerLabel={showConsumedProgress}
+      mutedProgress={mutedProgress}
       progress={progress}
       size={size}
       thickness={6}
-      lowerLabel={showConsumedProgress}
-      mutedProgress={mutedProgress}
     >
       <span className={`text-center text-on/90 ${size < 120 ? "text-[13px] leading-[15px]" : size >= 130 ? "text-[18px] leading-[21px]" : "text-[15px] leading-[19px]"}`}>
         {isLoading ? (
@@ -117,10 +121,10 @@ export function ProgressRingBlock({
 export function AiAdviceCard({ children, large = false }: { children: ReactNode; large?: boolean }) {
   return (
     <m.div
-      variants={fadeInUp}
-      initial="hidden"
       animate="visible"
       className={`flex w-full min-w-0 flex-col gap-1 rounded-card bg-[#d9d9d9] text-on ${large ? "px-[13px] py-[12px]" : "p-4"}`}
+      initial="hidden"
+      variants={fadeInUp}
     >
       <span className={`${large ? "text-[16px] leading-5" : "text-[13px]"} font-medium text-[#333]`}>
         Совет от ИИ-помощника:
@@ -142,7 +146,7 @@ export function CardLoading() {
 /** Placeholder shown in the plan card until automatic generation completes. */
 export function PlanLoading() {
   return (
-    <div className="flex min-h-[150px] items-center justify-center gap-3 text-on/70" aria-live="polite">
+    <div aria-live="polite" className="flex min-h-[150px] items-center justify-center gap-3 text-on/70">
       <Spinner size={28} />
       <span className="text-bodySm">Готовим план…</span>
     </div>

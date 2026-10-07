@@ -1,11 +1,13 @@
+import type { PhysicalActivity } from "@/api/types";
+
 import { OnboardingLayout } from "./OnboardingLayout";
+
 import { OptionButton } from "@/ui";
 import {
   PersonStandingIcon,
   PersonWalkingIcon,
   PersonRunningIcon,
 } from "@/ui/icons";
-import type { PhysicalActivity } from "@/api/types";
 
 interface ActivityStepProps {
   selected: PhysicalActivity | null;
@@ -55,22 +57,23 @@ export function ActivityStep({
 }: ActivityStepProps) {
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title="Ваш уровень физ. активности"
       showBack
+      canContinue={!!selected}
+      step={step}
+      title="Ваш уровень физ. активности"
+      total={total}
       onBack={onBack}
       onNext={onNext}
-      canContinue={!!selected}
     >
       {OPTIONS.map((o) => {
         const active = selected === o.value;
+
         return (
           <OptionButton
             key={o.value}
+            className="min-h-[76px]"
             selected={active}
             onClick={() => onChange(o.value)}
-            className="min-h-[76px]"
           >
             <span
               className={active ? "text-on" : "text-on/80"}

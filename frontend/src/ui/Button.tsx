@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+
 import clsx from "clsx";
 
 type Variant = "primary" | "ghost" | "surface" | "outline";
@@ -29,7 +30,6 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      type="button"
       className={clsx(
         "flex items-center justify-center gap-2 rounded-pill",
         "transition-[transform,background-color,opacity] duration-150 active:scale-[0.97]",
@@ -38,6 +38,7 @@ export function Button({
         fullWidth && "w-full",
         className,
       )}
+      type="button"
       {...rest}
     >
       {children}
@@ -53,12 +54,12 @@ export function GhostButton({
 }: ButtonProps) {
   return (
     <button
-      type="button"
       className={clsx(
         "flex min-h-11 min-w-11 items-center justify-center text-on",
         "transition-[transform,opacity] duration-150 active:scale-90 active:opacity-60 disabled:opacity-40",
         className,
       )}
+      type="button"
       {...rest}
     >
       {children}
@@ -77,12 +78,12 @@ export function IconPillButton({
 }: ButtonProps) {
   return (
     <button
-      type="button"
       className={clsx(
         "flex min-h-11 items-center justify-center gap-2 rounded-card bg-accent px-4 text-bodySm font-medium text-on",
         "transition-[transform,background-color,opacity] duration-150 active:scale-[0.97] active:bg-accent-soft disabled:opacity-40",
         className,
       )}
+      type="button"
       {...rest}
     >
       {children}

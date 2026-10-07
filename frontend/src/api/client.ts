@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
+
 import { API_URL } from "@/constants";
 
 /**
@@ -24,11 +25,14 @@ export function setAuthHeader(initData: string): void {
 export function apiErrorDetails(err: unknown): string {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { error?: string; details?: string } | undefined;
+
     if (data?.error && data.details) return `${data.error}: ${data.details}`;
     if (data?.error) return data.error;
     if (data?.details) return data.details;
+
     return err.message;
   }
+
   return err instanceof Error ? err.message : "unknown error";
 }
 
@@ -67,7 +71,9 @@ export function apiErrorMessage(err: unknown): string {
     // Locally thrown errors may already carry a Russian user-facing message -
     // pass those through instead of masking them with a generic text.
     const message = err instanceof Error ? err.message : "";
+
     if (/[\u0400-\u04FF]/.test(message)) return message;
+
     return "Что-то пошло не так. Попробуй ещё раз.";
   }
 
@@ -86,6 +92,7 @@ export function apiErrorMessage(err: unknown): string {
   if (status >= 500) return "Ошибка сервера. Попробуй ещё раз позже.";
   if (status >= 400) return "Запрос не прошёл. Попробуй ещё раз.";
   if (!err.response) return NETWORK_MESSAGE;
+
   return "Что-то пошло не так. Попробуй ещё раз.";
 }
 

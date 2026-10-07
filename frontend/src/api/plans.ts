@@ -1,4 +1,3 @@
-import { http } from "./client";
 import type {
   ActionType,
   ActionRequest,
@@ -6,6 +5,8 @@ import type {
   PlanRequest,
   PlanResponse,
 } from "./types";
+
+import { http } from "./client";
 
 export interface ListRange {
   start_at: number;
@@ -28,6 +29,7 @@ export async function listActions(
       },
     },
   );
+
   return data;
 }
 
@@ -40,12 +42,14 @@ export async function createAction(
     `/api/users/${utgid}/actions`,
     action,
   );
+
   return data;
 }
 
 /** GET /api/actions/{id} */
 export async function getAction(id: string): Promise<ActionResponse> {
   const { data } = await http.get<ActionResponse>(`/api/actions/${id}`);
+
   return data;
 }
 
@@ -62,6 +66,7 @@ export async function listPlans(
       ...(type ? { type } : {}),
     },
   });
+
   return data;
 }
 
@@ -75,5 +80,6 @@ export async function createPlan(
     plan,
     { timeout: 170_000 },
   );
+
   return data;
 }

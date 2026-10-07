@@ -163,7 +163,7 @@ export const listItemVariants: Variants = {
  */
 export function MotionProvider({ children }: { children: ReactNode }) {
   return (
-    <LazyMotion features={domMax} strict>
+    <LazyMotion strict features={domMax}>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </LazyMotion>
   );
@@ -179,10 +179,10 @@ export function PageTransition({
 }) {
   return (
     <m.div
-      variants={pageVariants}
-      initial="hidden"
       animate="visible"
       className={clsx("flex min-h-full flex-1 flex-col", className)}
+      initial="hidden"
+      variants={pageVariants}
     >
       {children}
     </m.div>
@@ -207,5 +207,6 @@ export function AnimatedNumber({
   }, [spring, value]);
 
   const text = useTransform(spring, (v) => `${Math.round(v)}`);
+
   return <m.span className={className}>{text}</m.span>;
 }

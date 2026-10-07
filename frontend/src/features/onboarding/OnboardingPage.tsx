@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
-import { useCreateUser } from "@/hooks/useUser";
-import { apiErrorMessage } from "@/api/client";
-import { Spinner, Text } from "@/ui";
-import { springs, stepVariants } from "@/ui/motion";
-import { AppShell } from "@/ui/AppShell";
-import { colors } from "@/design/tokens";
-import { haptic } from "@/lib/telegram";
+
 import {
   draftToProfile,
   useOnboardingStore,
@@ -17,6 +11,14 @@ import { BirthdayStep } from "./BirthdayStep";
 import { WeightStep, HeightStep } from "./WeightHeightSteps";
 import { GoalStep } from "./GoalStep";
 import { ActivityStep } from "./ActivityStep";
+
+import { useCreateUser } from "@/hooks/useUser";
+import { apiErrorMessage } from "@/api/client";
+import { Spinner, Text } from "@/ui";
+import { springs, stepVariants } from "@/ui/motion";
+import { AppShell } from "@/ui/AppShell";
+import { colors } from "@/design/tokens";
+import { haptic } from "@/lib/telegram";
 
 const TOTAL_STEPS = 7;
 
@@ -52,8 +54,10 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
 
   const submit = () => {
     const profile = draftToProfile(draft);
+
     if (!profile) {
       haptic("warning");
+
       return;
     }
     createUser.mutate(profile, {
@@ -64,12 +68,12 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
 
   if (createUser.isPending) {
     return (
-      <AppShell className="items-center justify-center" style={{ backgroundColor: colors.bg }} aria-live="polite">
+      <AppShell aria-live="polite" className="items-center justify-center" style={{ backgroundColor: colors.bg }}>
         <m.div
-          initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={springs.soft}
           className="flex flex-col items-center gap-4 px-8 text-center text-on"
+          initial={{ opacity: 0, scale: 0.94 }}
+          transition={springs.soft}
         >
           <Spinner size={40} />
           <Text kind="title">Сохраняем профиль</Text>
@@ -85,20 +89,20 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
 
   return (
     <div style={{ backgroundColor: colors.bg }}>
-      <AnimatePresence mode="wait" custom={direction} initial={false}>
+      <AnimatePresence custom={direction} initial={false} mode="wait">
         <m.div
           key={step}
-          custom={direction}
-          variants={stepVariants}
-          initial="enter"
           animate="center"
+          custom={direction}
           exit="exit"
+          initial="enter"
+          variants={stepVariants}
         >
           {step === 0 && (
             <NameStep
+              initialName={name ?? ""}
               step={step}
               total={TOTAL_STEPS}
-              initialName={name ?? ""}
               onBack={() => window.history.back()}
               onNext={(v) => {
                 actions.setName(v);
@@ -108,9 +112,9 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           )}
           {step === 1 && (
             <GenderStep
+              selected={draft.gender}
               step={step}
               total={TOTAL_STEPS}
-              selected={draft.gender}
               onBack={goBack}
               onChange={actions.setGender}
               onNext={goNext}
@@ -148,9 +152,9 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           )}
           {step === 5 && (
             <GoalStep
+              selected={draft.goal}
               step={step}
               total={TOTAL_STEPS}
-              selected={draft.goal}
               onBack={goBack}
               onChange={actions.setGoal}
               onNext={goNext}
@@ -158,9 +162,9 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
           )}
           {step === 6 && (
             <ActivityStep
+              selected={draft.physicalActivity}
               step={step}
               total={TOTAL_STEPS}
-              selected={draft.physicalActivity}
               onBack={goBack}
               onChange={actions.setPhysicalActivity}
               onNext={() => {
@@ -172,7 +176,7 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
       </AnimatePresence>
       {createUser.isError && (
         <div className="px-6 pb-8 text-center">
-          <Text kind="subtitle" className="text-danger">
+          <Text className="text-danger" kind="subtitle">
             {apiErrorMessage(createUser.error)}
           </Text>
         </div>

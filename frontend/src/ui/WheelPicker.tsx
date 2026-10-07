@@ -57,14 +57,17 @@ export function WheelColumn<T extends string | number>({
       0,
       Math.min(maxWindowStart, Math.floor(scrollTop / rowHeight) - 1),
     );
+
     setWindowStart((current) => current === nextStart ? current : nextStart);
   };
 
   const scrollToIndex = useCallback(
     (index: number) => {
       const el = viewportRef.current;
+
       if (!el) return;
       const top = index * rowHeight;
+
       el.scrollTo({ top, behavior: "smooth" });
       updateWindow(top);
     },
@@ -80,6 +83,7 @@ export function WheelColumn<T extends string | number>({
     startY.current = e.clientY;
     startOffset.current = viewportRef.current?.scrollTop ?? 0;
     const option = (e.target as HTMLElement).closest<HTMLElement>("[data-wheel-index]");
+
     pointerDownIndex.current = option ? Number(option.dataset.wheelIndex) : null;
     pointerMoved.current = false;
     viewportRef.current?.setPointerCapture(e.pointerId);
@@ -88,8 +92,10 @@ export function WheelColumn<T extends string | number>({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!dragging) return;
     const el = viewportRef.current;
+
     if (!el) return;
     const delta = e.clientY - startY.current;
+
     if (Math.abs(delta) > 3) pointerMoved.current = true;
     if (!pointerMoved.current) return;
     el.scrollTop = startOffset.current - delta;
@@ -100,17 +106,21 @@ export function WheelColumn<T extends string | number>({
     if (!dragging) return;
     setDragging(false);
     const el = viewportRef.current;
+
     if (!el) return;
     if (!pointerMoved.current && pointerDownIndex.current !== null) {
       const selected = pointerDownIndex.current;
+
       pointerDownIndex.current = null;
       onSelect(values[selected]);
       scrollToIndex(selected);
+
       return;
     }
     pointerDownIndex.current = null;
     const idx = Math.round(el.scrollTop / rowHeight);
     const idxClamped = Math.max(0, Math.min(values.length - 1, idx));
+
     if (idxClamped !== idx) {
       el.scrollTo({ top: idxClamped * rowHeight, behavior: "smooth" });
     }
@@ -122,13 +132,16 @@ export function WheelColumn<T extends string | number>({
     const opacity =
       distance === 0 ? 1 : distance === 1 ? 0.35 : 0.12;
     const scale = distance === 0 ? 1 : 0.92;
+
     return (
       <div
         key={String(value)}
+        aria-selected={distance === 0}
+        className="flex h-[35px] w-full min-w-0 cursor-pointer items-center justify-center"
+        data-wheel-index={index}
         id={`wheel-${ariaLabel}-${index}`}
         role="option"
-        aria-selected={distance === 0}
-        data-wheel-index={index}
+        style={{ opacity, transform: `scale(${scale})`, transition: "opacity 0.15s ease, transform 0.15s ease" }}
         tabIndex={0}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -136,8 +149,6 @@ export function WheelColumn<T extends string | number>({
           onSelect(value);
           scrollToIndex(index);
         }}
-        className="flex h-[35px] w-full min-w-0 cursor-pointer items-center justify-center"
-        style={{ opacity, transform: `scale(${scale})`, transition: "opacity 0.15s ease, transform 0.15s ease" }}
       >
         <span
           className={clsx(
@@ -156,22 +167,23 @@ export function WheelColumn<T extends string | number>({
 
   return (
     <div
-      className="flex min-w-0 flex-1 flex-col items-center"
       aria-label={ariaLabel}
+      className="flex min-w-0 flex-1 flex-col items-center"
     >
       {label && (
         <span className="mb-2 text-bodySm text-on/60">{label}</span>
       )}
       <div
         ref={viewportRef}
-        role="listbox"
         aria-activedescendant={`wheel-${ariaLabel}-${clampedIndex}`}
         className={clsx("relative h-[105px] w-[110px] select-none overflow-hidden", viewportClassName)}
+        role="listbox"
         style={{ touchAction: "none" }}
+        tabIndex={0}
+        onPointerCancel={handlePointerUp}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
       >
         <div aria-hidden="true" style={{ height: (windowStart + 1) * rowHeight }} />
         {values.slice(windowStart, windowStart + visibleRows).map((v, offset) =>

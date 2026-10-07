@@ -1,6 +1,8 @@
-import { OnboardingLayout } from "./OnboardingLayout";
-import { OptionButton } from "@/ui";
 import type { Gender } from "@/api/types";
+
+import { OnboardingLayout } from "./OnboardingLayout";
+
+import { OptionButton } from "@/ui";
 
 interface GenderStepProps {
   selected: Gender | null;
@@ -22,25 +24,25 @@ export function GenderStep({
 }: GenderStepProps) {
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title="Ваш пол:"
       showBack
+      canContinue={!!selected}
+      step={step}
+      title="Ваш пол:"
+      total={total}
       onBack={onBack}
       onNext={onNext}
-      canContinue={!!selected}
     >
       <OptionButton
+        className="justify-center text-center"
         selected={selected === "Male"}
         onClick={() => onChange("Male")}
-        className="justify-center text-center"
       >
         Мужской
       </OptionButton>
       <OptionButton
+        className="justify-center text-center"
         selected={selected === "Female"}
         onClick={() => onChange("Female")}
-        className="justify-center text-center"
       >
         Женский
       </OptionButton>

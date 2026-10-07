@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import { OnboardingLayout } from "./OnboardingLayout";
+
 import { Input } from "@/ui";
 
 interface NameStepProps {
@@ -19,24 +21,29 @@ export function NameStep({
   initialName = "",
 }: NameStepProps) {
   const [name, setName] = useState(initialName.slice(0, 50));
+  const inputRef = useRef<HTMLInputElement>(null);
   const canContinue = name.trim().length > 0 && name.trim().length <= 50;
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title="Как вас зовут?"
       showBack
+      canContinue={canContinue}
+      step={step}
+      title="Как вас зовут?"
+      total={total}
       onBack={onBack}
       onNext={() => canContinue && onNext(name.trim())}
-      canContinue={canContinue}
     >
       <Input
+        ref={inputRef}
+        maxLength={50}
+        placeholder="Имя"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Имя"
-        maxLength={50}
-        autoFocus
       />
     </OnboardingLayout>
   );

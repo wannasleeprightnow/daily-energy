@@ -1,6 +1,8 @@
+import type { ActionType } from "@/api/types";
+
 import { useMemo, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
-import type { ActionType } from "@/api/types";
+
 import { Button, Input, Spinner, WheelColumn } from "@/ui";
 import { easings } from "@/ui/motion";
 import { CrossIcon } from "@/ui/icons";
@@ -45,25 +47,25 @@ function TimeWheelPair({
     <div className="flex items-center justify-center gap-0">
       <div className="w-[88px] shrink-0">
         <WheelColumn
-          values={hourValues}
-          selected={hours}
-          onSelect={onHoursChange}
           ariaLabel={`${ariaPrefix}-hours`}
           displayValue={(value) => String(value).padStart(2, "0")}
-          viewportClassName="h-[105px] w-[88px]"
+          selected={hours}
           valueClassName="text-[27px] leading-8"
+          values={hourValues}
+          viewportClassName="h-[105px] w-[88px]"
+          onSelect={onHoursChange}
         />
       </div>
       <span className="text-[26px] text-on">:</span>
       <div className="w-[88px] shrink-0">
         <WheelColumn
-          values={MINUTES}
-          selected={minutes}
-          onSelect={onMinutesChange}
           ariaLabel={`${ariaPrefix}-minutes`}
           displayValue={(value) => String(value).padStart(2, "0")}
-          viewportClassName="h-[105px] w-[88px]"
+          selected={minutes}
           valueClassName="text-[27px] leading-8"
+          values={MINUTES}
+          viewportClassName="h-[105px] w-[88px]"
+          onSelect={onMinutesChange}
         />
       </div>
     </div>
@@ -120,14 +122,17 @@ export function AddEntrySheet({
 
   const estimate = async () => {
     const name = title.trim();
+
     if (!name) {
       haptic("warning");
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
+
       return;
     }
     if (!isFood && durationMinutesTotal < 1) {
       haptic("warning");
       setError("Выбери длительность активности");
+
       return;
     }
     try {
@@ -146,6 +151,7 @@ export function AddEntrySheet({
               duration_minutes: durationMinutesTotal,
             })
           : null;
+
       if (!result) {
         throw new Error("Не удалось загрузить данные профиля");
       }
@@ -167,19 +173,23 @@ export function AddEntrySheet({
 
   const submit = async () => {
     const name = title.trim();
+
     if (!name) {
       haptic("warning");
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
+
       return;
     }
     if (!isFood && durationMinutesTotal < 1) {
       haptic("warning");
       setError("Выбери длительность активности");
+
       return;
     }
     if (!isFood && estimatedForDuration !== null && estimatedForDuration !== durationMinutesTotal) {
       haptic("warning");
       setError("Длительность изменилась — пересчитай калории");
+
       return;
     }
 
@@ -195,11 +205,14 @@ export function AddEntrySheet({
       setIsSubmitting(true);
       setError(null);
       let kcal = calories;
+
       if (isFood && !caloriesEdited) {
         const estimate = await estimateCalories({ title: name });
+
         if (!estimate.calories || estimate.calories <= 0) {
           setError("Не удалось определить калории — попробуй ещё раз");
           haptic("warning");
+
           return;
         }
         kcal = estimate.calories;
@@ -207,6 +220,7 @@ export function AddEntrySheet({
       if (!kcal || Number.isNaN(kcal) || kcal <= 0) {
         setError("Укажи количество калорий");
         haptic("warning");
+
         return;
       }
 
@@ -233,25 +247,25 @@ export function AddEntrySheet({
       {open && (
         <m.div
           key="add-entry"
-          initial={{ opacity: 0, x: "8%" }}
           animate={{
             opacity: 1,
             x: 0,
             transition: { duration: 0.24, ease: easings.out },
           }}
+          className="fixed inset-0 z-40 mx-auto flex w-full max-w-app min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24"
           exit={{
             opacity: 0,
             x: "8%",
             transition: { duration: 0.16, ease: easings.smooth },
           }}
-          className="fixed inset-0 z-40 mx-auto flex w-full max-w-app min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-[#212121] px-[14px] pt-4 pb-24"
+          initial={{ opacity: 0, x: "8%" }}
         >
       <header className="mb-5 flex min-h-10 items-center gap-2">
         <button
-          type="button"
-          onClick={close}
           aria-label="Закрыть"
           className="flex h-10 w-10 shrink-0 items-center justify-center text-on"
+          type="button"
+          onClick={close}
         >
           <CrossIcon size={24} />
         </button>
@@ -259,12 +273,12 @@ export function AddEntrySheet({
           {isFood ? "Новая запись о приёме пищи" : "Новая запись об активности"}
         </h1>
         <button
-          type="button"
-          onClick={onCalendar}
           aria-label="Выбрать дату"
           className="flex h-10 w-10 shrink-0 items-center justify-center"
+          type="button"
+          onClick={onCalendar}
         >
-          <img src={calendarIcon} alt="" aria-hidden="true" className="h-9 w-9" />
+          <img alt="" aria-hidden="true" className="h-9 w-9" src={calendarIcon} />
         </button>
       </header>
 
@@ -272,24 +286,24 @@ export function AddEntrySheet({
         <section className="rounded-card bg-[#272727] px-6 py-3">
           <h2 className="text-[24px] font-medium leading-8 text-on">🕒 Время</h2>
           <TimeWheelPair
+            ariaPrefix="Время записи"
+            hourValues={HOURS}
             hours={hour}
             minutes={minute}
             onHoursChange={setHour}
             onMinutesChange={setMinute}
-            hourValues={HOURS}
-            ariaPrefix="Время записи"
           />
         </section>
 
         <section className="rounded-card bg-[#272727] px-5 py-3">
           <h2 className="mb-3 text-[24px] font-medium leading-8 text-on">⚡ Название</h2>
           <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder={isFood ? "Например: овсянка с бананом" : "Например: бег"}
             aria-label={isFood ? "Название блюда" : "Название активности"}
             className="h-[50px] rounded-[18px] bg-black px-5 py-2 !text-[18px] placeholder:!text-[18px] placeholder:text-[#858585] placeholder:opacity-100"
+            placeholder={isFood ? "Например: овсянка с бананом" : "Например: бег"}
             style={{ backgroundColor: "#000000" }}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
           />
         </section>
 
@@ -299,25 +313,25 @@ export function AddEntrySheet({
               ⏱ Длительность активности
             </h2>
             <TimeWheelPair
+              ariaPrefix="Длительность активности"
+              hourValues={DURATION_HOURS}
               hours={durationHours}
               minutes={durationMinutes}
               onHoursChange={setDurationHours}
               onMinutesChange={setDurationMinutes}
-              hourValues={DURATION_HOURS}
-              ariaPrefix="Длительность активности"
             />
           </section>
         )}
 
         <Button
-          variant="outline"
           fullWidth
-          onClick={() => void estimate()}
-          disabled={isEstimating || isSubmitting || createAction.isPending || (isFood && foodEstimateForTitle === title.trim())}
           className="min-h-[53px] px-3 text-[16px] font-medium"
+          disabled={isEstimating || isSubmitting || createAction.isPending || (isFood && foodEstimateForTitle === title.trim())}
+          variant="outline"
+          onClick={() => void estimate()}
         >
           {isEstimating ? (
-            <Spinner size={22} className="shrink-0" />
+            <Spinner className="shrink-0" size={22} />
           ) : (
             "Пусть Рафик сделает расчёт калорий"
           )}
@@ -336,34 +350,34 @@ export function AddEntrySheet({
           </h2>
           <div className="mt-2 flex justify-center">
             <WheelColumn
-              values={CALORIES}
+              ariaLabel="Калории"
               selected={calories}
+              valueClassName="text-[27px] leading-8"
+              values={CALORIES}
+              viewportClassName="h-[105px] w-full max-w-[180px]"
               onSelect={(value) => {
                 setCalories(value);
                 setCaloriesEdited(true);
                 setEstimatedForDuration(null);
               }}
-              ariaLabel="Калории"
-              viewportClassName="h-[105px] w-full max-w-[180px]"
-              valueClassName="text-[27px] leading-8"
             />
           </div>
         </section>
 
         {error && (
-          <p role="alert" className="px-2 text-center text-bodySm text-danger">
+          <p className="px-2 text-center text-bodySm text-danger" role="alert">
             {error}
           </p>
         )}
 
         <Button
-          variant="outline"
           fullWidth
-          onClick={() => void submit()}
-          disabled={isEstimating || isSubmitting || createAction.isPending}
           className="mt-auto min-h-[50px] text-[23px] font-medium"
+          disabled={isEstimating || isSubmitting || createAction.isPending}
+          variant="outline"
+          onClick={() => void submit()}
         >
-          {isSubmitting ? <Spinner size={24} className="shrink-0" /> : "Добавить запись"}
+          {isSubmitting ? <Spinner className="shrink-0" size={24} /> : "Добавить запись"}
         </Button>
       </div>
         </m.div>

@@ -1,4 +1,5 @@
 import { NumberWheelStep } from "./NumberWheelStep";
+
 import { LIMITS } from "@/constants";
 
 interface WeightStepProps {
@@ -15,10 +16,10 @@ export function WeightStep(props: WeightStepProps) {
   return (
     <NumberWheelStep
       {...props}
+      max={LIMITS.weight.max}
+      min={LIMITS.weight.min}
       title="Ваш вес (в кг):"
       unit="кг"
-      min={LIMITS.weight.min}
-      max={LIMITS.weight.max}
     />
   );
 }
@@ -37,10 +38,10 @@ export function HeightStep(props: HeightStepProps) {
   return (
     <NumberWheelStep
       {...props}
+      max={LIMITS.height.max}
+      min={LIMITS.height.min}
       title="Ваш рост (в см):"
       unit="см"
-      min={LIMITS.height.min}
-      max={LIMITS.height.max}
     />
   );
 }

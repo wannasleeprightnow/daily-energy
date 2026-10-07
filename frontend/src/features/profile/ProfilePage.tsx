@@ -1,13 +1,17 @@
+import type { ActionResponse } from "@/api/types";
+
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ActionResponse } from "@/api/types";
+
+import { GOAL_LABEL, ACTIVITY_LABEL } from "./labels";
+
 import { GhostButton, Spinner } from "@/ui";
 import { PencilIcon } from "@/ui/icons";
 import { useActions } from "@/hooks/useActions";
 import { useUser, useWeightHistory } from "@/hooks/useUser";
 import { dayRange, formatFullDate, formatShortDate, nowStartOfDay } from "@/lib/dates";
 import { getTgUser } from "@/lib/telegram";
-import { GOAL_LABEL, ACTIVITY_LABEL } from "./labels";
+
 
 interface ProfilePageProps {
   utgid: number;
@@ -25,7 +29,9 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
   const calorieRange = useMemo(() => {
     const today = nowStartOfDay();
     const start = new Date(today);
+
     start.setDate(start.getDate() - 6);
+
     return {
       start_at: dayRange(start).start_at,
       finish_at: dayRange(today).finish_at,
@@ -35,7 +41,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
 
   if (isLoading || !user) {
     return (
-      <div className="flex flex-1 items-center justify-center" aria-live="polite">
+      <div aria-live="polite" className="flex flex-1 items-center justify-center">
         <Spinner size={40} />
       </div>
     );
@@ -55,6 +61,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
     }));
   const todayStartAt = dayRange(nowStartOfDay()).start_at;
   const lastMeasurement = measurementHistory.at(-1);
+
   if (
     !lastMeasurement ||
     lastMeasurement.date < todayStartAt ||
@@ -62,7 +69,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
     lastMeasurement.height !== user.height
   ) {
     measurementHistory.push({
-      date: Math.floor(Date.now() / 1000),
+      date: Math.max(todayStartAt, (lastMeasurement?.date ?? 0) + 1),
       weight: user.weight,
       height: user.height,
     });
@@ -86,9 +93,9 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
         <div className="flex items-center gap-3">
           {telegramAvatar ? (
             <img
-              src={telegramAvatar}
               alt="Аватар пользователя"
               className="h-12 w-12 shrink-0 rounded-full object-cover"
+              src={telegramAvatar}
             />
           ) : (
             <div
@@ -102,9 +109,9 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
             <p className="text-[24px] font-medium text-on">{user.name}</p>
           </div>
           <GhostButton
-            onClick={() => navigate("/profile/edit")}
             aria-label="Редактировать"
             className="h-11 w-11 text-[#ff7700]"
+            onClick={() => navigate("/profile/edit")}
           >
             <PencilIcon size={24} />
           </GhostButton>
@@ -123,18 +130,18 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
       <section className="mt-4 rounded-card bg-[#272727] p-4">
         <h2 className="text-[20px] font-medium text-on">Динамика веса</h2>
         <TrendChart
+          emptyMessage="Добавь ещё один замер веса, чтобы увидеть динамику."
           points={weightPoints}
           unit="кг"
-          emptyMessage="Добавь ещё один замер веса, чтобы увидеть динамику."
         />
       </section>
 
       <section className="mt-4 rounded-card bg-[#272727] p-4">
         <h2 className="text-[20px] font-medium text-on">Динамика ИМТ</h2>
         <TrendChart
+          emptyMessage="Добавь ещё один замер веса, чтобы увидеть динамику ИМТ."
           points={bmiPoints}
           unit=""
-          emptyMessage="Добавь ещё один замер веса, чтобы увидеть динамику ИМТ."
         />
       </section>
 
@@ -142,10 +149,10 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
         <h2 className="text-[20px] font-medium text-on">Динамика потребления калорий</h2>
         <DailyCaloriesChart
           days={dailyCalories}
-          valueKey="food"
+          emptyMessage="Пока нет записей о приёмах пищи."
           isLoading={actionsLoading}
           label="Потреблено"
-          emptyMessage="Пока нет записей о приёмах пищи."
+          valueKey="food"
         />
       </section>
 
@@ -153,10 +160,10 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
         <h2 className="text-[20px] font-medium text-on">Динамика расхода калорий</h2>
         <DailyCaloriesChart
           days={dailyCalories}
-          valueKey="activity"
+          emptyMessage="Пока нет записей об активности."
           isLoading={actionsLoading}
           label="Потрачено"
-          emptyMessage="Пока нет записей об активности."
+          valueKey="activity"
         />
       </section>
     </div>
@@ -208,42 +215,42 @@ function TrendChart({
   return (
     <div>
       <svg
-        viewBox={`0 0 ${chart.width} ${chart.height}`}
-        role="img"
         aria-label={`Динамика показателя: от ${formatValue(coordinates[0].value)} до ${formatValue(coordinates.at(-1)!.value)}`}
         className="mt-3 h-auto w-full overflow-visible"
+        role="img"
+        viewBox={`0 0 ${chart.width} ${chart.height}`}
       >
-        <line x1={chart.left} y1={chart.top} x2={chart.left} y2={chart.bottom} stroke="#666" />
-        <line x1={chart.left} y1={chart.bottom} x2={chart.right} y2={chart.bottom} stroke="#666" />
-        <text x="2" y={chart.top + 4} fill="#aaa" fontSize="11">{formatValue(max)}</text>
-        <text x="22" y={chart.bottom} fill="#aaa" fontSize="11">0</text>
+        <line stroke="#666" x1={chart.left} x2={chart.left} y1={chart.top} y2={chart.bottom} />
+        <line stroke="#666" x1={chart.left} x2={chart.right} y1={chart.bottom} y2={chart.bottom} />
+        <text fill="#aaa" fontSize="11" x="2" y={chart.top + 4}>{formatValue(max)}</text>
+        <text fill="#aaa" fontSize="11" x="22" y={chart.bottom}>0</text>
         {coordinates.map((point, index) => (
           <g key={`${point.date}-${index}`}>
             <rect
-              x={point.x}
-              y={chart.bottom - point.height}
-              width={barWidth}
+              fill="#f08629"
               height={point.height}
               rx="5"
-              fill="#f08629"
+              width={barWidth}
+              x={point.x}
+              y={chart.bottom - point.height}
             />
             <title>{`${formatShortDate(point.date)}: ${formatValue(point.value)}`}</title>
             <text
-              x={point.x + barWidth / 2}
-              y={chart.bottom - point.height - 8}
               fill="#fff"
               fontSize="10"
               textAnchor="middle"
+              x={point.x + barWidth / 2}
+              y={chart.bottom - point.height - 8}
             >
               {formatValue(point.value)}
             </text>
             {(index === 0 || index === points.length - 1 || (points.length > 4 && index % 2 === 0)) && (
               <text
-                x={point.x + barWidth / 2}
-                y="160"
                 fill="#aaa"
                 fontSize="10"
                 textAnchor="middle"
+                x={point.x + barWidth / 2}
+                y="160"
               >
                 {formatShortDate(point.date)}
               </text>
@@ -267,14 +274,17 @@ interface DailyCalories {
 function buildDailyCalories(startAt: number, actions: ActionResponse[]): DailyCalories[] {
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(startAt * 1000);
+
     date.setDate(date.getDate() + index);
     const range = dayRange(date);
+
     return actions.reduce<DailyCalories>(
       (daily, action) => {
         if (action.date >= range.start_at && action.date <= range.finish_at) {
           if (action.type === "Food") daily.food += action.calories;
           if (action.type === "Activity") daily.activity += action.calories;
         }
+
         return daily;
       },
       { date: range.start_at, food: 0, activity: 0 },
@@ -308,36 +318,37 @@ function DailyCaloriesChart({
   return (
     <div className="mt-2">
       <svg
-        viewBox={`0 0 ${chart.width} ${chart.height}`}
-        role="img"
         aria-label={`${label} калорий за последние семь дней`}
         className="mt-1 h-auto w-full overflow-visible"
+        role="img"
+        viewBox={`0 0 ${chart.width} ${chart.height}`}
       >
-        <line x1={chart.left} y1={chart.top} x2={chart.left} y2={chart.bottom} stroke="#666" />
-        <line x1={chart.left} y1={chart.bottom} x2={chart.right} y2={chart.bottom} stroke="#666" />
-        <text x="2" y={chart.top + 4} fill="#aaa" fontSize="11">{maxValue}</text>
-        <text x="22" y={chart.bottom} fill="#aaa" fontSize="11">0</text>
+        <line stroke="#666" x1={chart.left} x2={chart.left} y1={chart.top} y2={chart.bottom} />
+        <line stroke="#666" x1={chart.left} x2={chart.right} y1={chart.bottom} y2={chart.bottom} />
+        <text fill="#aaa" fontSize="11" x="2" y={chart.top + 4}>{maxValue}</text>
+        <text fill="#aaa" fontSize="11" x="22" y={chart.bottom}>0</text>
         {days.map((day, index) => {
           const value = day[valueKey];
           const height = (value / maxValue) * (chart.bottom - barTop);
           const x = chart.left + index * step + (step - barWidth) / 2;
           const y = chart.bottom - height;
+
           return (
             <g key={day.date}>
-              {value > 0 && <rect x={x} y={y} width={barWidth} height={height} rx="5" fill="#f08629" />}
+              {value > 0 && <rect fill="#f08629" height={height} rx="5" width={barWidth} x={x} y={y} />}
               <title>{`${formatShortDate(day.date)}: ${value} ккал`}</title>
               {value > 0 && (
                 <text
-                  x={x + barWidth / 2}
-                  y={y - 8}
                   fill="#fff"
                   fontSize="9"
                   textAnchor="middle"
+                  x={x + barWidth / 2}
+                  y={y - 8}
                 >
                   {value}
                 </text>
               )}
-              <text x={x + barWidth / 2} y="160" fill="#aaa" fontSize="10" textAnchor="middle">
+              <text fill="#aaa" fontSize="10" textAnchor="middle" x={x + barWidth / 2} y="160">
                 {formatShortDate(day.date)}
               </text>
             </g>

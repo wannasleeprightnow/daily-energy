@@ -1,7 +1,9 @@
+import type { ActionType, PlanRequest, PlanResponse } from "@/api/types";
+
 import { useEffect } from "react";
 import { useIsFetching, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { createPlan, listPlans } from "@/api/plans";
-import type { ActionType, PlanRequest, PlanResponse } from "@/api/types";
 import { dayRange } from "@/lib/dates";
 
 export function planKeys(
@@ -28,6 +30,7 @@ export function usePlans(
 /** POST /api/users/{utgid}/plans — builds a plan for a date. */
 export function useCreatePlan(utgid: number) {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (plan: PlanRequest) => createPlan(utgid, plan),
     onSuccess: () =>
@@ -53,13 +56,16 @@ export function useEnsurePlan(
     refetchOnWindowFocus: "always",
     retry: false,
   });
+
   useEffect(() => {
     if (query.isSuccess && query.data) {
       const grouped = new Map<string, { range: { start_at: number; finish_at: number }; type: ActionType; plans: PlanResponse[] }>();
+
       for (const plan of query.data) {
         const range = dayRange(new Date(plan.date * 1000));
         const key = `${range.start_at}:${plan.type}`;
         const group = grouped.get(key) ?? { range, type: plan.type, plans: [] };
+
         group.plans.push(plan);
         grouped.set(key, group);
       }
@@ -68,6 +74,7 @@ export function useEnsurePlan(
       }
     }
   }, [query.dataUpdatedAt, query.isSuccess, qc, utgid]);
+
   return query;
 }
 
@@ -96,6 +103,7 @@ export function useIsRefreshingFuturePlan(utgid: number, profileKey: string) {
       query.queryKey[2] === timezone &&
       query.queryKey[4] !== profileKey,
   );
+
   return Boolean(
     isEnsuring && currentQuery?.state.fetchStatus === "fetching" && hasPreviousProfileQuery,
   );

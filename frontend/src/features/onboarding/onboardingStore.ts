@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
-import { LIMITS } from "@/constants";
 import type {
   Gender,
   Goal,
   PhysicalActivity,
 } from "@/api/types";
+
+import { useCallback, useMemo, useState } from "react";
+
+import { LIMITS } from "@/constants";
 
 /** Client-side draft accumulated through the onboarding steps. */
 export interface ProfileDraft {
@@ -29,6 +31,7 @@ export interface OnboardingActions {
 
 export function emptyDraft(): ProfileDraft {
   const birthday = new Date();
+
   birthday.setFullYear(birthday.getFullYear() - 20);
   birthday.setHours(0, 0, 0, 0);
 
@@ -68,6 +71,7 @@ export function draftToProfile(
   ) {
     return null;
   }
+
   return {
     name: d.name.trim(),
     gender: d.gender,
@@ -86,6 +90,7 @@ export function useOnboardingStore() {
   const actions = useMemo<OnboardingActions>(() => {
     const patch = (p: Partial<ProfileDraft>) =>
       setDraft((prev) => ({ ...prev, ...p }));
+
     return {
       setName: (v: string) => patch({ name: v }),
       setGender: (v: Gender) => patch({ gender: v }),

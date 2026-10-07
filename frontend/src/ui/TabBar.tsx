@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+
 import clsx from "clsx";
 import { m } from "framer-motion";
+
 import { springs } from "./motion";
 import { GhostButton } from "./Button";
 
@@ -49,17 +51,17 @@ interface NavItemProps {
 export function NavItem({ label, icon, active = false, onClick }: NavItemProps) {
   return (
     <GhostButton
-      onClick={onClick}
       aria-current={active ? "page" : undefined}
-      style={{ color: active ? "#ffffff" : "#666666" }}
       className={clsx("flex flex-col items-center gap-1")}
+      style={{ color: active ? "#ffffff" : "#666666" }}
+      onClick={onClick}
     >
       <span className="flex h-10 w-10 items-center justify-center">
         {/* Active tab pops gently: transform-only spring on one small node. */}
         <m.span
+          animate={{ scale: active ? 1.12 : 1 }}
           className="flex items-center justify-center"
           initial={false}
-          animate={{ scale: active ? 1.12 : 1 }}
           transition={springs.snappy}
         >
           {icon}

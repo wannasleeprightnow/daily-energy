@@ -1,4 +1,7 @@
+import type { UserCreate, UserRequest, UserResponse } from "@/api/types";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import {
   addWeightEntry,
   createUser,
@@ -7,7 +10,6 @@ import {
   isConflict,
   updateUser,
 } from "@/api/users";
-import type { UserCreate, UserRequest, UserResponse } from "@/api/types";
 import { getInitData, getTgId } from "@/lib/telegram";
 
 export const queryKeys = {
@@ -61,6 +63,7 @@ export function useWeightHistory(utgid?: number) {
     enabled: !!utgid,
     queryFn: async () => {
       const history = (await getWeightHistory(utgid as number)) ?? [];
+
       return history.sort((a, b) => a.date - b.date);
     },
   });
@@ -69,15 +72,19 @@ export function useWeightHistory(utgid?: number) {
 /** POST /api/users during onboarding. */
 export function useCreateUser() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: async (profile: Omit<UserCreate, "utgid">) => {
       const id = getTgId();
+
       if (!id) throw new Error("Нет Telegram-идентификатора");
       await createUser({ ...profile, utgid: id });
+
       return profile;
     },
     onSuccess: () => {
       const id = getTgId();
+
       if (id) void qc.invalidateQueries({ queryKey: queryKeys.user(id) });
     },
   });
@@ -86,6 +93,7 @@ export function useCreateUser() {
 /** PUT /api/users for the edit-profile flow. */
 export function useUpdateUser(utgid: number) {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       patch,
@@ -115,8 +123,10 @@ export function useUpdateUser(utgid: number) {
       }
 
       const updatedUser = await updateUser(utgid, patch);
+
       if (latest?.weight !== patch.weight || latest?.height !== patch.height) {
         const lastRecordedDate = latest?.date ?? snapshotDate - 1;
+
         await addWeightEntry(utgid, {
           date: Math.max(Math.floor(Date.now() / 1000), lastRecordedDate + 1),
           weight: patch.weight,

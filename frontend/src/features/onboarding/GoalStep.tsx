@@ -1,6 +1,8 @@
-import { OnboardingLayout } from "./OnboardingLayout";
-import { OptionButton } from "@/ui";
 import type { Goal } from "@/api/types";
+
+import { OnboardingLayout } from "./OnboardingLayout";
+
+import { OptionButton } from "@/ui";
 
 interface GoalStepProps {
   selected: Goal | null;
@@ -35,20 +37,20 @@ export function GoalStep({
 }: GoalStepProps) {
   return (
     <OnboardingLayout
-      step={step}
-      total={total}
-      title="Какая у вас цель?"
       showBack
+      canContinue={!!selected}
+      step={step}
+      title="Какая у вас цель?"
+      total={total}
       onBack={onBack}
       onNext={onNext}
-      canContinue={!!selected}
     >
       {GOALS.map((g) => (
         <OptionButton
           key={g.value}
+          className="justify-between"
           selected={selected === g.value}
           onClick={() => onChange(g.value)}
-          className="justify-between"
         >
           <span>{g.label}</span>
           {g.emoji && <span className="text-body">{g.emoji}</span>}

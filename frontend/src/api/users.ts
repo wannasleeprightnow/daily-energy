@@ -1,4 +1,3 @@
-import { http } from "./client";
 import type {
   UserCreate,
   UserResponse,
@@ -7,17 +6,21 @@ import type {
   UserWeightHistoryRequest,
 } from "./types";
 
+import { http } from "./client";
+
 /** POST /api/users — create a new user. */
 export async function createUser(
   user: UserCreate,
 ): Promise<UserResponse> {
   const { data } = await http.post<UserResponse>("/api/users", user);
+
   return data;
 }
 
 /** GET /api/users/{utgid} — fetch a user by Telegram id. */
 export async function getUser(utgid: number): Promise<UserResponse> {
   const { data } = await http.get<UserResponse>(`/api/users/${utgid}`);
+
   return data;
 }
 
@@ -27,6 +30,7 @@ export async function updateUser(
   patch: UserRequest,
 ): Promise<UserResponse> {
   const { data } = await http.put<UserResponse>(`/api/users/${utgid}`, patch);
+
   return data;
 }
 
@@ -42,6 +46,7 @@ export async function getWeightHistory(
   const { data } = await http.get<UserWeightHistoryResponse[]>(
     `/api/users/${utgid}/weight-history`,
   );
+
   return data;
 }
 
@@ -54,6 +59,7 @@ export async function addWeightEntry(
     `/api/users/${utgid}/weight-history`,
     entry,
   );
+
   return data;
 }
 
@@ -61,6 +67,7 @@ export async function addWeightEntry(
 export function isNotFound(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   const status = (err as { response?: { status?: number } }).response?.status;
+
   return status === 404;
 }
 
@@ -68,5 +75,6 @@ export function isNotFound(err: unknown): boolean {
 export function isConflict(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   const status = (err as { response?: { status?: number } }).response?.status;
+
   return status === 409;
 }
