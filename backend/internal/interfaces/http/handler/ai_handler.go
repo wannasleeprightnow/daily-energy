@@ -19,6 +19,12 @@ type AiHandler struct {
 	cnfg config.Config
 }
 
+// caloriesMaxTokens caps the AI response length. mercury-2.5 is a reasoning
+// model: it spends several hundred tokens on hidden reasoning before emitting
+// the answer, so a small cap (32) always hit "length" with empty content.
+// Billing is per token actually used, so a generous cap costs nothing extra.
+const caloriesMaxTokens = 4000
+
 func NewAiHandler(cnfg config.Config) *AiHandler {
 	return &AiHandler{cnfg: cnfg}
 }
@@ -34,7 +40,7 @@ func (h *AiHandler) CalculationCalories(c *gin.Context) {
 	jsonData, err := ai.GenerateMessage(
 		"Estimate the kilocalories in the stated food. If the portion is unspecified, assume one standard serving cooked in water. Reply with ONLY one positive integer - no units, words, ranges, or Markdown.",
 		req.Title,
-		32,
+		caloriesMaxTokens,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode request body"})
@@ -81,7 +87,7 @@ func (h *AiHandler) CalculationActivityCalories(c *gin.Context) {
 	)
 	systemPrompt := "Estimate kilocalories burned in the described activity session using a standard MET-based method with the provided weight, height, age, and gender; pick a realistic intensity for the named activity. Reply with ONLY one positive integer - no units, words, ranges, or Markdown."
 
-	jsonData, err := ai.GenerateMessage(systemPrompt, userPrompt, 32)
+	jsonData, err := ai.GenerateMessage(systemPrompt, userPrompt, caloriesMaxTokens)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode request body"})
 		return
@@ -119,6 +125,13 @@ func (h *AiHandler) writeCaloriesResponse(c *gin.Context, jsonData []byte) {
 	}
 
 	content := strings.TrimSpace(aiResp.Choices[0].Message.Content)
+	if content == "" {
+		// The provider answered with no text at all (for example, the
+		// reasoning budget was still exhausted) - report it clearly instead
+		// of a generic parse failure.
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI provider returned an empty response"})
+		return
+	}
 	if content == "null" || content == `"null"` {
 		c.JSON(http.StatusOK, dto.CaloriesResponse{Calories: nil})
 		return

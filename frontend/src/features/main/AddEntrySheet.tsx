@@ -309,7 +309,7 @@ export function AddEntrySheet({
           fullWidth
           onClick={() => void estimate()}
           disabled={busy || createAction.isPending}
-          className="min-h-[53px] rounded-[16px] px-3 text-[16px] font-medium"
+          className="min-h-[53px] px-3 text-[16px] font-medium"
         >
           {busy ? (
             <Spinner size={22} />
@@ -355,8 +355,7 @@ export function AddEntrySheet({
           fullWidth
           onClick={() => void submit()}
           disabled={busy || createAction.isPending}
-          className="mt-auto min-h-[50px] rounded-[16px] text-[23px] font-medium"
-          style={{ backgroundColor: "#f08629", color: "#ffffff" }}
+          className="mt-auto min-h-[50px] text-[23px] font-medium"
         >
           {busy ? <Spinner size={24} /> : "Добавить запись"}
         </Button>

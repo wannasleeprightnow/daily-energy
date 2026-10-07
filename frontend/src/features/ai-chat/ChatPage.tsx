@@ -42,6 +42,9 @@ export function ChatPage() {
   const [error, setError] = useState<string | null>(null);
   const [retryText, setRetryText] = useState<string | null>(null);
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
+  // The "Подключаю чат…" banner only appears after a grace period, so a fast
+  // initial connect never flashes it over the interface.
+  const [showConnectionBanner, setShowConnectionBanner] = useState(false);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const idRef = useRef(1);
@@ -60,6 +63,7 @@ export function ChatPage() {
 
     let disposed = false;
     let retryTimer: number | undefined;
+    let bannerTimer: number | undefined;
     let retryAttempt = 0;
 
     const connect = () => {
@@ -67,6 +71,19 @@ export function ChatPage() {
       // Each websocket connection starts a fresh conversation on the server.
       profileContextSentRef.current = false;
       setConnectionState(retryAttempt === 0 ? "connecting" : "reconnecting");
+      // A retry (unlike the first connect) means the user is stuck without
+      // chat - surface the banner immediately, no grace period.
+      if (retryAttempt === 0) {
+        setShowConnectionBanner(false);
+        window.clearTimeout(bannerTimer);
+        bannerTimer = window.setTimeout(() => {
+          if (!disposed && socketRef.current?.readyState !== WebSocket.OPEN) {
+            setShowConnectionBanner(true);
+          }
+        }, 1500);
+      } else {
+        setShowConnectionBanner(true);
+      }
       const socket = protocols
         ? new WebSocket(endpoint, protocols)
         : new WebSocket(endpoint);
@@ -75,7 +92,9 @@ export function ChatPage() {
       socket.onopen = () => {
         if (disposed || socketRef.current !== socket) return;
         retryAttempt = 0;
+        window.clearTimeout(bannerTimer);
         setConnectionState("connected");
+        setShowConnectionBanner(false);
         if (!inFlightTextRef.current && !retryTextRef.current) setError(null);
       };
       socket.onmessage = (event) => {
@@ -111,8 +130,10 @@ export function ChatPage() {
       socket.onclose = () => {
         if (socketRef.current === socket) socketRef.current = null;
         if (disposed) return;
+        window.clearTimeout(bannerTimer);
         setBusy(false);
         setConnectionState("reconnecting");
+        setShowConnectionBanner(true);
         const pendingRetry = retryTextRef.current ?? inFlightTextRef.current;
         retryTextRef.current = pendingRetry;
         setRetryText((current) => current ?? pendingRetry);
@@ -127,6 +148,7 @@ export function ChatPage() {
     return () => {
       disposed = true;
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      window.clearTimeout(bannerTimer);
       const socket = socketRef.current;
       socketRef.current = null;
       socket?.close(1000, "component unmounted");
@@ -203,13 +225,15 @@ export function ChatPage() {
       </header>
 
       <AnimatePresence>
-        {connectionState !== "connected" && (
+        {showConnectionBanner && connectionState !== "connected" && (
           <m.div
             key="connection-banner"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easings.out } }}
             exit={{ opacity: 0, y: -12, transition: { duration: 0.16, ease: easings.smooth } }}
-            className="mx-auto mt-3 flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3"
+            // Floating overlay below the header: never pushes or shifts the
+            // chat content underneath.
+            className="absolute inset-x-0 top-[76px] z-20 mx-auto flex w-[85%] items-center justify-between gap-3 rounded-card bg-[#303030] px-4 py-3 shadow-lg"
           >
             <p className="text-[14px] leading-5 text-on" role="status">
               {connectionState === "connecting"
