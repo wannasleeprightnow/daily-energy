@@ -67,7 +67,8 @@ services:
     profiles:
       - prod
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   nginx-prod:
     container_name: nginx-prod
@@ -132,6 +133,11 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
     volumes:
       - type: volume
         source: postgres-data
