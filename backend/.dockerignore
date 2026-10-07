@@ -1,6 +1,4 @@
 .git
-.gitignore
+**/*_test.go
 *.test
-*.out
-main
-tmp/
+coverage.out

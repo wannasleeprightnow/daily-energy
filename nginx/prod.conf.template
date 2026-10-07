@@ -6,85 +6,108 @@ events {
 }
 
 http {
-        upstream backend-prod {
-            server backend-prod:8080;
+    limit_req_zone $binary_remote_addr zone=api_rate:10m rate=10r/s;
+    limit_req_zone $binary_remote_addr zone=ai_rate:10m rate=3r/s;
+    limit_req_zone $binary_remote_addr zone=chat_handshake_rate:10m rate=10r/m;
+    limit_conn_zone $binary_remote_addr zone=chat_connections:10m;
+    limit_req_status 429;
+    limit_req_log_level warn;
+    limit_conn_status 429;
+    limit_conn_log_level warn;
+
+    upstream backend-prod {
+        server backend-prod:8080;
+    }
+
+    upstream frontend-prod {
+        server frontend-prod:5173;
+    }
+
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    gzip on;
+    gzip_disable "msie6";
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/json application/javascript application/manifest+json application/wasm image/svg+xml text/xml application/xml application/xml+rss text/javascript;
+
+    server {
+        listen 80;
+        server_name ${SERVER_NAME};
+        server_tokens off;
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
         }
 
-        upstream frontend-prod {
-            server frontend-prod:5173;
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        server_name ${SERVER_NAME};
+        server_tokens off;
+
+        ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 1d;
+        client_max_body_size 1m;
+
+        location / {
+            proxy_pass http://frontend-prod;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-
-        sendfile on;
-        tcp_nopush on;
-        tcp_nodelay on;
-        keepalive_timeout 65;
-        types_hash_max_size 2048;
-
-        gzip on;
-        gzip_disable "msie6";
-        gzip_vary on;
-        gzip_proxied any;
-        gzip_comp_level 6;
-        gzip_buffers 16 8k;
-        gzip_http_version 1.1;
-        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-        server {
-            listen 80;
-            server_name ${SERVER_NAME};
-            server_tokens off;
-
-            location /.well-known/acme-challenge/ {
-                root /var/www/certbot;
-            }
-
-            location / {
-                return 301 https://$host$request_uri;
-            }
+        location /api/ws/chat {
+            limit_req zone=chat_handshake_rate burst=5 nodelay;
+            limit_conn chat_connections 20;
+            proxy_pass http://backend-prod;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+            proxy_buffering off;
         }
 
-        server {
-            listen 443 ssl;
-            server_name ${SERVER_NAME};
-            server_tokens off;
-
-            ssl_certificate /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
-            ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
-            ssl_protocols TLSv1.2 TLSv1.3;
-            ssl_session_cache shared:SSL:10m;
-            ssl_session_timeout 1d;
-
-             location / {
-                proxy_pass http://frontend-prod;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-             }
-            
-            location /api/ws/chat {
-                proxy_pass http://backend-prod;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection "upgrade";
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_read_timeout 3600s;
-                proxy_send_timeout 3600s;
-                proxy_buffering off;
-            }
-
-            location /api {
-                proxy_pass http://backend-prod;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-            }
+        location /api/ai/ {
+            limit_req zone=ai_rate burst=6 nodelay;
+            proxy_pass http://backend-prod;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
+
+        location /api {
+            limit_req zone=api_rate burst=30 nodelay;
+            proxy_pass http://backend-prod;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
 }
