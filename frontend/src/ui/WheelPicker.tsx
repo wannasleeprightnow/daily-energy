@@ -45,6 +45,8 @@ export function WheelColumn<T extends string | number>({
   const [windowStart, setWindowStart] = useState(0);
   const startY = useRef(0);
   const startOffset = useRef(0);
+  const pointerDownIndex = useRef<number | null>(null);
+  const pointerMoved = useRef(false);
 
   const rowHeight = 35;
   const visibleRows = 7;
@@ -62,7 +64,7 @@ export function WheelColumn<T extends string | number>({
     (index: number) => {
       const el = viewportRef.current;
       if (!el) return;
-      const top = (index - 1) * rowHeight;
+      const top = index * rowHeight;
       el.scrollTo({ top, behavior: "smooth" });
       updateWindow(top);
     },
@@ -77,6 +79,9 @@ export function WheelColumn<T extends string | number>({
     setDragging(true);
     startY.current = e.clientY;
     startOffset.current = viewportRef.current?.scrollTop ?? 0;
+    const option = (e.target as HTMLElement).closest<HTMLElement>("[data-wheel-index]");
+    pointerDownIndex.current = option ? Number(option.dataset.wheelIndex) : null;
+    pointerMoved.current = false;
     viewportRef.current?.setPointerCapture(e.pointerId);
   };
 
@@ -84,7 +89,10 @@ export function WheelColumn<T extends string | number>({
     if (!dragging) return;
     const el = viewportRef.current;
     if (!el) return;
-    el.scrollTop = startOffset.current - (e.clientY - startY.current);
+    const delta = e.clientY - startY.current;
+    if (Math.abs(delta) > 3) pointerMoved.current = true;
+    if (!pointerMoved.current) return;
+    el.scrollTop = startOffset.current - delta;
     updateWindow(el.scrollTop);
   };
 
@@ -93,7 +101,15 @@ export function WheelColumn<T extends string | number>({
     setDragging(false);
     const el = viewportRef.current;
     if (!el) return;
-    const idx = Math.round(el.scrollTop / rowHeight) + 1;
+    if (!pointerMoved.current && pointerDownIndex.current !== null) {
+      const selected = pointerDownIndex.current;
+      pointerDownIndex.current = null;
+      onSelect(values[selected]);
+      scrollToIndex(selected);
+      return;
+    }
+    pointerDownIndex.current = null;
+    const idx = Math.round(el.scrollTop / rowHeight);
     const idxClamped = Math.max(0, Math.min(values.length - 1, idx));
     if (idxClamped !== idx) {
       el.scrollTo({ top: idxClamped * rowHeight, behavior: "smooth" });
@@ -112,8 +128,11 @@ export function WheelColumn<T extends string | number>({
         id={`wheel-${ariaLabel}-${index}`}
         role="option"
         aria-selected={distance === 0}
+        data-wheel-index={index}
         tabIndex={0}
-        onClick={() => {
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
           onSelect(value);
           scrollToIndex(index);
         }}
@@ -154,13 +173,13 @@ export function WheelColumn<T extends string | number>({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div aria-hidden="true" style={{ height: windowStart * rowHeight }} />
+        <div aria-hidden="true" style={{ height: (windowStart + 1) * rowHeight }} />
         {values.slice(windowStart, windowStart + visibleRows).map((v, offset) =>
           renderRow(v, windowStart + offset),
         )}
         <div
           aria-hidden="true"
-          style={{ height: Math.max(0, values.length - windowStart - visibleRows) * rowHeight }}
+          style={{ height: (Math.max(0, values.length - windowStart - visibleRows) + 1) * rowHeight }}
         />
       </div>
     </div>

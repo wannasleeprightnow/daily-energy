@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
 
-type Variant = "primary" | "ghost" | "surface";
+type Variant = "primary" | "ghost" | "surface" | "outline";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -13,6 +13,7 @@ const variantClasses: Record<Variant, string> = {
   primary: "bg-accent text-on hover:bg-accent-soft",
   ghost: "bg-transparent text-on",
   surface: "bg-surface2 text-on hover:bg-surface",
+  outline: "border border-accent bg-surface text-on hover:bg-surface2",
 };
 
 /**
