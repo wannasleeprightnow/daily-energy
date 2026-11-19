@@ -7,7 +7,7 @@ import (
 
 type Plan struct {
 	Id                uuid.UUID         `gorm:"column:id;primaryKey"`
-	Utgid             int64             `gorm:"column:utgid"`
+	UserID             int64             `gorm:"column:user_id"`
 	Date              int64             `gorm:"column:date"`
 	CaloriesToConsume int               `gorm:"column:calories_to_consume"`
 	CaloriesToBurn    int               `gorm:"column:calories_to_burn"`

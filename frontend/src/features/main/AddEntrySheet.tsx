@@ -10,14 +10,13 @@ import { useCreateAction } from "@/hooks/useActions";
 import { estimateActivityCalories, estimateCalories } from "@/api/ai";
 import { apiErrorMessage } from "@/api/client";
 import { useUser } from "@/hooks/useUser";
-import { haptic } from "@/lib/telegram";
 import calendarIcon from "@/assets/icons/calendar.svg";
 
 interface AddEntrySheetProps {
   open: boolean;
   onClose: () => void;
   onCalendar: () => void;
-  utgid: number;
+  user_id: number;
   type: ActionType;
   /** Day the entry belongs to (local midnight). */
   date: Date;
@@ -77,7 +76,7 @@ export function AddEntrySheet({
   open,
   onClose,
   onCalendar,
-  utgid,
+  user_id,
   type,
   date,
 }: AddEntrySheetProps) {
@@ -96,8 +95,8 @@ export function AddEntrySheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createAction = useCreateAction(utgid);
-  const { data: user } = useUser(utgid);
+  const createAction = useCreateAction(user_id);
+  const { data: user } = useUser(user_id);
   const durationMinutesTotal = durationHours * 60 + durationMinutes;
   const durationLabel =
     [durationHours > 0 ? `${durationHours} ч` : "", durationMinutes > 0 ? `${durationMinutes} мин` : ""]
@@ -124,13 +123,11 @@ export function AddEntrySheet({
     const name = title.trim();
 
     if (!name) {
-      haptic("warning");
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
 
       return;
     }
     if (!isFood && durationMinutesTotal < 1) {
-      haptic("warning");
       setError("Выбери длительность активности");
 
       return;
@@ -162,9 +159,7 @@ export function AddEntrySheet({
       setCaloriesEdited(true);
       if (isFood) setFoodEstimateForTitle(name);
       setEstimatedForDuration(isFood ? null : durationMinutesTotal);
-      haptic("success");
     } catch (err) {
-      haptic("error");
       setError(apiErrorMessage(err));
     } finally {
       setIsEstimating(false);
@@ -175,19 +170,16 @@ export function AddEntrySheet({
     const name = title.trim();
 
     if (!name) {
-      haptic("warning");
       setError(isFood ? "Укажи, что ты съел" : "Укажи название активности");
 
       return;
     }
     if (!isFood && durationMinutesTotal < 1) {
-      haptic("warning");
       setError("Выбери длительность активности");
 
       return;
     }
     if (!isFood && estimatedForDuration !== null && estimatedForDuration !== durationMinutesTotal) {
-      haptic("warning");
       setError("Длительность изменилась — пересчитай калории");
 
       return;
@@ -211,7 +203,6 @@ export function AddEntrySheet({
 
         if (!estimate.calories || estimate.calories <= 0) {
           setError("Не удалось определить калории — попробуй ещё раз");
-          haptic("warning");
 
           return;
         }
@@ -219,7 +210,6 @@ export function AddEntrySheet({
       }
       if (!kcal || Number.isNaN(kcal) || kcal <= 0) {
         setError("Укажи количество калорий");
-        haptic("warning");
 
         return;
       }
@@ -231,11 +221,9 @@ export function AddEntrySheet({
         type,
       });
 
-      haptic("success");
       reset();
       onClose();
     } catch (err) {
-      haptic("error");
       setError(apiErrorMessage(err));
     } finally {
       setIsSubmitting(false);

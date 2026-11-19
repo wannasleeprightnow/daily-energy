@@ -7,40 +7,40 @@ import { createPlan, listPlans } from "@/api/plans";
 import { dayRange } from "@/lib/dates";
 
 export function planKeys(
-  utgid: number,
+  user_id: number,
   range: { start_at: number; finish_at: number },
   type?: ActionType,
 ) {
-  return ["plans", utgid, range.start_at, range.finish_at, type ?? "all"] as const;
+  return ["plans", user_id, range.start_at, range.finish_at, type ?? "all"] as const;
 }
 
 /** List plans for the window, optional type filter. */
 export function usePlans(
-  utgid: number | undefined,
+  user_id: number | undefined,
   range: { start_at: number; finish_at: number },
   type?: ActionType,
 ) {
   return useQuery<PlanResponse[]>({
-    queryKey: planKeys(utgid ?? -1, range, type),
-    enabled: !!utgid,
-    queryFn: () => listPlans(utgid as number, range, type),
+    queryKey: planKeys(user_id ?? -1, range, type),
+    enabled: !!user_id,
+    queryFn: () => listPlans(user_id as number, range, type),
   });
 }
 
-/** POST /api/users/{utgid}/plans — builds a plan for a date. */
-export function useCreatePlan(utgid: number) {
+/** POST /api/users/{user_id}/plans — builds a plan for a date. */
+export function useCreatePlan(user_id: number) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (plan: PlanRequest) => createPlan(utgid, plan),
+    mutationFn: (plan: PlanRequest) => createPlan(user_id, plan),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["plans", utgid] }),
+      qc.invalidateQueries({ queryKey: ["plans", user_id] }),
   });
 }
 
 /** Ensure the current profile has a complete plan for the current local week. */
 export function useEnsurePlan(
-  utgid: number,
+  user_id: number,
   profileKey: string,
   enabled: boolean,
 ) {
@@ -48,8 +48,8 @@ export function useEnsurePlan(
   const localDate = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ["ensurePlan", utgid, timezone, localDate, profileKey],
-    queryFn: () => createPlan(utgid, { timezone }),
+    queryKey: ["ensurePlan", user_id, timezone, localDate, profileKey],
+    queryFn: () => createPlan(user_id, { timezone }),
     enabled,
     staleTime: 10 * 60 * 1000,
     refetchOnMount: "always",
@@ -70,27 +70,27 @@ export function useEnsurePlan(
         grouped.set(key, group);
       }
       for (const group of grouped.values()) {
-        qc.setQueryData(planKeys(utgid, group.range, group.type), group.plans);
+        qc.setQueryData(planKeys(user_id, group.range, group.type), group.plans);
       }
     }
-  }, [query.dataUpdatedAt, query.isSuccess, qc, utgid]);
+  }, [query.dataUpdatedAt, query.isSuccess, qc, user_id]);
 
   return query;
 }
 
 /** True while the app's shared ensure-plan request is generating/updating data. */
-export function useIsEnsuringPlan(utgid: number) {
-  return useIsFetching({ queryKey: ["ensurePlan", utgid] }) > 0;
+export function useIsEnsuringPlan(user_id: number) {
+  return useIsFetching({ queryKey: ["ensurePlan", user_id] }) > 0;
 }
 
 /** Detect a profile-triggered regeneration while the new profile request runs. */
-export function useIsRefreshingFuturePlan(utgid: number, profileKey: string) {
+export function useIsRefreshingFuturePlan(user_id: number, profileKey: string) {
   const queryClient = useQueryClient();
-  const isEnsuring = useIsEnsuringPlan(utgid);
+  const isEnsuring = useIsEnsuringPlan(user_id);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const localDate = new Date().toLocaleDateString("en-CA", { timeZone: timezone });
   const cache = queryClient.getQueryCache().findAll({
-    queryKey: ["ensurePlan", utgid],
+    queryKey: ["ensurePlan", user_id],
   });
   const currentQuery = cache.find(
     (query) =>

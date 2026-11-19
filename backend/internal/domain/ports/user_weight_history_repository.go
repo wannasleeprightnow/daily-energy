@@ -6,6 +6,6 @@ import (
 )
 
 type UserWeightHistoryRepository interface {
-	GetUserWeightHistory(ctx context.Context, utgid int64) ([]models.UserWeightHistory, error)
+	GetUserWeightHistory(ctx context.Context, user_id int64) ([]models.UserWeightHistory, error)
 	Save(ctx context.Context, userWeightHistory models.UserWeightHistory) error
 }

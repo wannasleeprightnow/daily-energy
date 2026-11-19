@@ -17,10 +17,10 @@ interface WarmupResult {
 }
 
 /** Prefetch data shared by the initial day, plan, and profile views. */
-export function useStartupWarmup(utgid: number, enabled: boolean) {
+export function useStartupWarmup(user_id: number, enabled: boolean) {
   const queryClient = useQueryClient();
   const [attempt, setAttempt] = useState(0);
-  const requestKey = `${utgid}:${attempt}`;
+  const requestKey = `${user_id}:${attempt}`;
   const [result, setResult] = useState<WarmupResult>({
     requestKey: "",
     ready: false,
@@ -53,28 +53,28 @@ export function useStartupWarmup(utgid: number, enabled: boolean) {
     const warmBackgroundData = () => {
       void Promise.allSettled([
         queryClient.fetchQuery({
-          queryKey: queryKeys.weightHistory(utgid),
+          queryKey: queryKeys.weightHistory(user_id),
           queryFn: async () => {
-            const history = (await getWeightHistory(utgid)) ?? [];
+            const history = (await getWeightHistory(user_id)) ?? [];
 
             return history.sort((a, b) => a.date - b.date);
           },
         }),
         queryClient.fetchQuery({
-          queryKey: actionKeys(utgid, chartRange),
-          queryFn: () => listActions(utgid, chartRange),
+          queryKey: actionKeys(user_id, chartRange),
+          queryFn: () => listActions(user_id, chartRange),
         }),
       ]);
     };
 
     void Promise.all([
       ...types.map((type) => queryClient.fetchQuery({
-        queryKey: actionKeys(utgid, todayRange, type),
-        queryFn: () => listActions(utgid, todayRange, type),
+        queryKey: actionKeys(user_id, todayRange, type),
+        queryFn: () => listActions(user_id, todayRange, type),
       })),
       queryClient.fetchQuery({
-        queryKey: ["startupPlanWarmup", utgid, planHorizon.start_at, planHorizon.finish_at],
-        queryFn: () => listPlans(utgid, planHorizon),
+        queryKey: ["startupPlanWarmup", user_id, planHorizon.start_at, planHorizon.finish_at],
+        queryFn: () => listPlans(user_id, planHorizon),
       }).then((plans) => {
         for (let offset = 0; offset < 7; offset += 1) {
           const date = new Date(today);
@@ -87,7 +87,7 @@ export function useStartupWarmup(utgid: number, enabled: boolean) {
               plan.type === type && plan.date >= range.start_at && plan.date <= range.finish_at,
             );
 
-            queryClient.setQueryData<PlanResponse[]>(planKeys(utgid, range, type), dayPlans);
+            queryClient.setQueryData<PlanResponse[]>(planKeys(user_id, range, type), dayPlans);
           }
         }
       }),
@@ -102,7 +102,7 @@ export function useStartupWarmup(utgid: number, enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, queryClient, requestKey, utgid]);
+  }, [enabled, queryClient, requestKey, user_id]);
 
   return {
     ready: !enabled || (result.requestKey === requestKey && result.ready),

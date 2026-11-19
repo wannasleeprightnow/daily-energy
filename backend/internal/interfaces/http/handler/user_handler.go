@@ -20,14 +20,14 @@ func NewUserHandler(userUC *usecase.UserUseCase) *UserHandler {
 }
 
 func (h *UserHandler) GetUser(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	user, err := h.userUC.Execute(c.Request.Context(), utgid)
+	user, err := h.userUC.Execute(c.Request.Context(), user_id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) { c.JSON(http.StatusNotFound, gin.H{"error": err.Error()}) } else { c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load profile"}) }
 		return
 	}
 
@@ -35,7 +35,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	utgid, ok := userIDFromContext(c)
+	user_id, ok := userIDFromContext(c)
 	if !ok {
 		return
 	}
@@ -52,10 +52,13 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	domainUser := req.ToUser()
-	domainUser.Utgid = utgid
+	domainUser.UserID = user_id
 
-	if _, err := h.userUC.Execute(c.Request.Context(), domainUser.Utgid); !errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := h.userUC.Execute(c.Request.Context(), domainUser.UserID); err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "user already exists"})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check profile"})
 		return
 	}
 
@@ -68,12 +71,12 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	if err := h.userUC.Delete(c.Request.Context(), utgid); err != nil {
+	if err := h.userUC.Delete(c.Request.Context(), user_id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
@@ -82,7 +85,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
@@ -98,7 +101,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	newUser, err := h.userUC.Update(c.Request.Context(), utgid, req)
+	newUser, err := h.userUC.Update(c.Request.Context(), user_id, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

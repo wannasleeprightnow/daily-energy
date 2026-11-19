@@ -17,7 +17,7 @@ import {
 } from "@/ui/icons";
 
 interface MainLayoutProps {
-  utgid: number;
+  user_id: number;
   planError?: Error | null;
   retryPlan: () => void;
 }
@@ -27,7 +27,7 @@ interface MainLayoutProps {
  * (Fig. `сегодня питание` frames). Navigation targets are provided by the
  * child routes; this layout only draws the persistent chrome.
  */
-export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
+export function MainLayout({ user_id, planError, retryPlan }: MainLayoutProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -38,7 +38,7 @@ export function MainLayout({ utgid, planError, retryPlan }: MainLayoutProps) {
 
   /** The date tab always opens the current day, discarding any calendar pick. */
   const openToday = () => {
-    writeDayPick(utgid, nowStartOfDay(), "today");
+    writeDayPick(user_id, nowStartOfDay(), "today");
     navigate("/today/food");
   };
 

@@ -8,8 +8,7 @@ func TestLoadConfigDefaultsAndDerivesProductionValues(t *testing.T) {
 		"DB_USERNAME":        "daily_energy",
 		"DB_PASSWORD":        "secret",
 		"DB_NAME":            "daily_energy",
-		"TELEGRAM_BOT_TOKEN": "telegram-token",
-		"MINI_APP_URL":       "https://app.example.com/",
+		"APP_URL":            "https://app.example.com/",
 	}
 
 	config, err := loadConfig(func(key string) string { return values[key] })
@@ -25,8 +24,35 @@ func TestLoadConfigDefaultsAndDerivesProductionValues(t *testing.T) {
 	if config.AllowOrigins != "https://app.example.com" {
 		t.Errorf("AllowOrigins = %q, want production origin", config.AllowOrigins)
 	}
-	if config.TelegramAPIURL != "https://api.telegram.org/bottelegram-token" {
-		t.Errorf("TelegramAPIURL = %q", config.TelegramAPIURL)
+	if !config.SecureCookies {
+		t.Error("SecureCookies = false, want secure cookies by default")
+	}
+}
+
+func TestLoadConfigCanDisableSecureCookiesForLocalHTTP(t *testing.T) {
+	values := map[string]string{
+		"DB_HOST": "postgres", "DB_USERNAME": "daily_energy",
+		"DB_PASSWORD": "local-only", "DB_NAME": "daily_energy",
+		"COOKIE_SECURE": "false",
+	}
+	config, err := loadConfig(func(key string) string { return values[key] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.SecureCookies {
+		t.Error("SecureCookies = true, want false for local HTTP")
+	}
+}
+
+func TestLoadConfigRejectsInvalidCookieSecureValue(t *testing.T) {
+	values := map[string]string{
+		"DB_HOST": "postgres", "DB_USERNAME": "daily_energy",
+		"DB_PASSWORD": "local-only", "DB_NAME": "daily_energy",
+		"COOKIE_SECURE": "sometimes",
+	}
+	_, err := loadConfig(func(key string) string { return values[key] })
+	if err == nil {
+		t.Fatal("expected invalid COOKIE_SECURE to fail")
 	}
 }
 

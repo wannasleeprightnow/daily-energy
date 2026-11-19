@@ -24,12 +24,12 @@ func NewPlanHandler(cnfg config.Config, planUC *usecase.PlanUseCase, userUC *use
 }
 
 func (h *PlanHandler) GetPlans(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	_, err := h.userUC.Execute(c.Request.Context(), utgid)
+	_, err := h.userUC.Execute(c.Request.Context(), user_id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -48,7 +48,7 @@ func (h *PlanHandler) GetPlans(c *gin.Context) {
 
 	t := c.Query("type")
 
-	plans, err := h.planUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, utgid, t)
+	plans, err := h.planUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, user_id, t)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

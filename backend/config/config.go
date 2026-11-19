@@ -19,17 +19,16 @@ type Config struct {
 	DBUsername       string
 	DBPassword       string
 	DBName           string
-	TelegramBotToken string
-	TelegramAPIURL   string
-	MiniAppURL       string
+	AppURL           string
 	APIPath          string
 	APIKey           string
 	AllowOrigins     string
+	SecureCookies    bool
 	CaloriesAnalyzer Prompt
 	PlanGenerator    Prompt
 }
 
-// LoadConfig reads and validates the production environment configuration.
+// LoadConfig reads and validates the application environment configuration.
 func LoadConfig() (Config, error) {
 	return loadConfig(os.Getenv)
 }
@@ -50,26 +49,32 @@ func loadConfig(getenv func(string) string) (Config, error) {
 		DBUsername:       strings.TrimSpace(getenv("DB_USERNAME")),
 		DBPassword:       getenv("DB_PASSWORD"),
 		DBName:           strings.TrimSpace(getenv("DB_NAME")),
-		TelegramBotToken: strings.TrimSpace(getenv("TELEGRAM_BOT_TOKEN")),
-		MiniAppURL:       strings.TrimSpace(getenv("MINI_APP_URL")),
+		AppURL:           strings.TrimSpace(getenv("APP_URL")),
 		APIPath:          strings.TrimSpace(getenv("API_PATH")),
 		APIKey:           strings.TrimSpace(getenv("API_KEY")),
 		AllowOrigins:     strings.TrimSpace(getenv("ALLOW_ORIGINS")),
+		SecureCookies:    true,
 		CaloriesAnalyzer: caloriesAnalyzerPrompt,
 		PlanGenerator:    planGeneratorPrompt,
+	}
+	if value := strings.TrimSpace(getenv("COOKIE_SECURE")); value != "" {
+		secure, err := strconv.ParseBool(value)
+		if err != nil {
+			return Config{}, fmt.Errorf("COOKIE_SECURE must be true or false")
+		}
+		config.SecureCookies = secure
 	}
 
 	if config.APIPath == "" {
 		config.APIPath = defaultAPIPath
 	}
-	if config.AllowOrigins == "" && config.MiniAppURL != "" {
-		origin, err := originFromURL(config.MiniAppURL)
+	if config.AllowOrigins == "" && config.AppURL != "" {
+		origin, err := originFromURL(config.AppURL)
 		if err != nil {
-			return Config{}, fmt.Errorf("MINI_APP_URL: %w", err)
+			return Config{}, fmt.Errorf("APP_URL: %w", err)
 		}
 		config.AllowOrigins = origin
 	}
-	config.TelegramAPIURL = "https://api.telegram.org/bot" + config.TelegramBotToken
 
 	for _, required := range []struct {
 		name  string
@@ -79,7 +84,6 @@ func loadConfig(getenv func(string) string) (Config, error) {
 		{name: "DB_USERNAME", value: config.DBUsername},
 		{name: "DB_PASSWORD", value: config.DBPassword},
 		{name: "DB_NAME", value: config.DBName},
-		{name: "TELEGRAM_BOT_TOKEN", value: config.TelegramBotToken},
 	} {
 		if required.value == "" {
 			return Config{}, fmt.Errorf("%s is required", required.name)

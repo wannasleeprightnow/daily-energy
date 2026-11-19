@@ -34,9 +34,9 @@ func TestAuthenticatedUserID(t *testing.T) {
 			response := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(response)
 			c.Request = httptest.NewRequest(http.MethodGet, "/users/"+tt.urlID, nil)
-			c.Params = gin.Params{{Key: "utgid", Value: tt.urlID}}
+			c.Params = gin.Params{{Key: "user_id", Value: tt.urlID}}
 			if tt.setContextID {
-				c.Set("utgid", tt.contextID)
+				c.Set("user_id", tt.contextID)
 			}
 
 			gotID, gotOK := authenticatedUserID(c)
@@ -55,8 +55,8 @@ func TestGetActionsStopsOnIdentityMismatch(t *testing.T) {
 	response := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(response)
 	c.Request = httptest.NewRequest(http.MethodGet, "/users/123/actions", nil)
-	c.Params = gin.Params{{Key: "utgid", Value: "123"}}
-	c.Set("utgid", "456")
+	c.Params = gin.Params{{Key: "user_id", Value: "123"}}
+	c.Set("user_id", "456")
 
 	(&ActionHandler{}).GetActions(c)
 

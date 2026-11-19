@@ -3,7 +3,6 @@ package dto
 import "github.com/isiyar/daily-energy/backend/internal/domain/models"
 
 type UserCreate struct {
-	Utgid            int64                   `json:"utgid" validate:"required,min=1"`
 	Name             string                  `json:"name" validate:"required,min=1,max=50"`
 	Gender           models.Gender           `json:"gender"`
 	DateofBirth      int64                   `json:"date_of_birth" validate:"required"`
@@ -15,7 +14,6 @@ type UserCreate struct {
 
 func (u *UserCreate) ToUser() models.User {
 	return models.User{
-		Utgid:            u.Utgid,
 		Name:             u.Name,
 		Gender:           u.Gender,
 		DateofBirth:      u.DateofBirth,

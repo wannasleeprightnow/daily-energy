@@ -3,7 +3,7 @@ package dto
 import "github.com/isiyar/daily-energy/backend/internal/domain/models"
 
 type UserResponse struct {
-	Utgid            int64                   `json:"utgid"`
+	UserID            int64                   `json:"user_id"`
 	Name             string                  `json:"name" validate:"required,min=1,max=50"`
 	Gender           models.Gender           `json:"gender"`
 	DateofBirth      int64                   `json:"date_of_birth" validate:"required"`
@@ -15,7 +15,7 @@ type UserResponse struct {
 
 func ToUserResponse(u models.User) UserResponse {
 	return UserResponse{
-		Utgid:            u.Utgid,
+		UserID:            u.UserID,
 		Name:             u.Name,
 		Gender:           u.Gender,
 		DateofBirth:      u.DateofBirth,

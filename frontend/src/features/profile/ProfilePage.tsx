@@ -8,24 +8,24 @@ import { GOAL_LABEL, ACTIVITY_LABEL } from "./labels";
 import { GhostButton, Spinner } from "@/ui";
 import { PencilIcon } from "@/ui/icons";
 import { useActions } from "@/hooks/useActions";
+import { useAuth } from "@/app/AuthProvider";
 import { useUser, useWeightHistory } from "@/hooks/useUser";
 import { dayRange, formatFullDate, formatShortDate, nowStartOfDay } from "@/lib/dates";
-import { getTgUser } from "@/lib/telegram";
 
 
 interface ProfilePageProps {
-  utgid: number;
+  user_id: number;
 }
 
 /**
  * Profile screen (Figma `профиль` 28:10).
  * Profile details with weight, BMI, and calorie history charts.
  */
-export function ProfilePage({ utgid }: ProfilePageProps) {
+export function ProfilePage({ user_id }: ProfilePageProps) {
   const navigate = useNavigate();
-  const { data: user, isLoading } = useUser(utgid);
-  const { data: history } = useWeightHistory(utgid);
-  const telegramAvatar = getTgUser()?.photo_url?.trim();
+  const { signOut } = useAuth();
+  const { data: user, isLoading } = useUser(user_id);
+  const { data: history } = useWeightHistory(user_id);
   const calorieRange = useMemo(() => {
     const today = nowStartOfDay();
     const start = new Date(today);
@@ -37,7 +37,7 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
       finish_at: dayRange(today).finish_at,
     };
   }, []);
-  const { data: actions, isLoading: actionsLoading } = useActions(utgid, calorieRange);
+  const { data: actions, isLoading: actionsLoading } = useActions(user_id, calorieRange);
 
   if (isLoading || !user) {
     return (
@@ -86,25 +86,12 @@ export function ProfilePage({ utgid }: ProfilePageProps) {
     <div className="px-5 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-h1 text-on">Профиль</h1>
+        <button className="text-sm text-[#ff7700]" onClick={() => void signOut()} type="button">Выйти</button>
       </div>
 
       {/* Profile card */}
       <section className="mt-5 rounded-card bg-[#272727] p-4">
         <div className="flex items-center gap-3">
-          {telegramAvatar ? (
-            <img
-              alt="Аватар пользователя"
-              className="h-12 w-12 shrink-0 rounded-full object-cover"
-              src={telegramAvatar}
-            />
-          ) : (
-            <div
-              aria-label="Аватар пользователя"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#383838] text-lg font-medium text-on"
-            >
-              {user.name.trim().charAt(0).toLocaleUpperCase() || "?"}
-            </div>
-          )}
           <div className="min-w-0 flex-1">
             <p className="text-[24px] font-medium text-on">{user.name}</p>
           </div>

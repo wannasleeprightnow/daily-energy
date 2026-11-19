@@ -18,6 +18,9 @@ func InitDatabase(c config.Config) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&adapterModels.User{}); err != nil {
 		return nil, err
 	}
+	if err := db.AutoMigrate(&adapterModels.Account{}, &adapterModels.AuthSession{}, &adapterModels.AccessToken{}); err != nil {
+		return nil, err
+	}
 
 	if err := db.AutoMigrate(
 		&adapterModels.Action{},
@@ -26,29 +29,14 @@ func InitDatabase(c config.Config) (*gorm.DB, error) {
 	); err != nil {
 		return nil, err
 	}
-	// Older installs could contain duplicate plan rows from repeated POSTs.
-	// Keep the most recently inserted row before enforcing the natural key.
-	if err := db.Exec(`DELETE FROM plans older USING plans newer WHERE older.utgid = newer.utgid AND older.date = newer.date AND older.type = newer.type AND older.ctid < newer.ctid`).Error; err != nil {
-		return nil, err
-	}
-	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_user_date_type ON plans (utgid, date, type)`).Error; err != nil {
-		return nil, err
-	}
-
-	// AutoMigrate creates the associations with ON DELETE CASCADE for new
-	// databases, but does not change the action of an existing foreign key.
-	// Rebuild these constraints so existing databases get the same behavior.
 	for _, stmt := range []string{
-		`ALTER TABLE actions DROP CONSTRAINT IF EXISTS fk_users_actions`,
-		`ALTER TABLE actions ADD CONSTRAINT fk_users_actions FOREIGN KEY (utgid) REFERENCES users (utgid) ON DELETE CASCADE`,
-		`ALTER TABLE plans DROP CONSTRAINT IF EXISTS fk_users_plans`,
-		`ALTER TABLE plans ADD CONSTRAINT fk_users_plans FOREIGN KEY (utgid) REFERENCES users (utgid) ON DELETE CASCADE`,
-		`ALTER TABLE user_weight_histories DROP CONSTRAINT IF EXISTS fk_users_user_weight_history`,
-		`ALTER TABLE user_weight_histories ADD CONSTRAINT fk_users_user_weight_history FOREIGN KEY (utgid) REFERENCES users (utgid) ON DELETE CASCADE`,
+		`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_account') THEN ALTER TABLE users ADD CONSTRAINT fk_users_account FOREIGN KEY (user_id) REFERENCES accounts (id) ON DELETE CASCADE; END IF; END $$`,
+		`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_auth_sessions_account') THEN ALTER TABLE auth_sessions ADD CONSTRAINT fk_auth_sessions_account FOREIGN KEY (account_id) REFERENCES accounts (id) ON DELETE CASCADE; END IF; END $$`,
 	} {
-		if err := db.Exec(stmt).Error; err != nil {
-			return nil, err
-		}
+		if err := db.Exec(stmt).Error; err != nil { return nil, err }
+	}
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_user_date_type ON plans (user_id, date, type)`).Error; err != nil {
+		return nil, err
 	}
 
 	return db, nil

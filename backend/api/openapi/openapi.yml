@@ -7,7 +7,7 @@ info:
     name: Daily Energy Team
 servers:
   - url: /
-    description: Production API на домене Mini App
+    description: Production API на домене сайта
 
 tags:
   - name: system
@@ -24,9 +24,58 @@ tags:
     description: Взаимодействие с ИИ
 
 security:
-  - TelegramInitData: []
+  - BearerAuth: []
 
 paths:
+  /api/auth/register:
+    post:
+      summary: Создать аккаунт и начать сессию
+      tags: [ users ]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '201': { description: Аккаунт создан; refresh token установлен в HttpOnly cookie }
+        '409': { description: Юзернейм уже занят }
+  /api/auth/login:
+    post:
+      summary: Войти в аккаунт
+      tags: [ users ]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '201': { description: Вход выполнен; refresh token установлен в HttpOnly cookie }
+        '401': { description: Неверный юзернейм или пароль }
+  /api/auth/refresh:
+    post:
+      summary: Обновить пару токенов и ротировать refresh token
+      tags: [ users ]
+      security: []
+      responses:
+        '200': { description: Access token обновлён }
+        '401': { description: Сессия истекла или отозвана }
+  /api/auth/logout:
+    post:
+      summary: Завершить текущую сессию
+      tags: [ users ]
+      security: []
+      responses:
+        '204': { description: Текущая сессия завершена }
+  /api/auth/me:
+    get:
+      summary: Получить текущий аккаунт
+      tags: [ users ]
+      responses:
+        '200': { description: Аккаунт авторизован }
   /api/docs:
     get:
       summary: Открыть интерактивную документацию Swagger UI
@@ -70,13 +119,13 @@ paths:
   /api/ws/chat:
     get:
       summary: Подключиться к чату по WebSocket
-      description: После успешного HTTP Upgrade сервер принимает текстовые сообщения и отвечает текстовыми сообщениями. Клиент предлагает подпротокол daily-energy-chat; в production Telegram initData передаётся дополнительно в подпротоколе daily-energy-initdata.<base64url(initData)>.
+      description: После успешного HTTP Upgrade сервер принимает текстовые сообщения и отвечает текстовыми сообщениями. Для авторизации передайте access token в подпротоколе daily-energy-token.<token>.
       tags: [ ai ]
       responses:
         '101':
           description: WebSocket соединение установлено
         '401':
-          description: Отсутствует или недействителен initData
+          description: Отсутствует или недействителен access token
           content:
             application/json:
               schema:
@@ -118,12 +167,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 
-  /api/users/{utgid}:
+  /api/users/{user_id}:
     get:
       summary: Получить пользователя по ID
       tags: [ users ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -158,7 +207,7 @@ paths:
       summary: Обновить данные пользователя
       tags: [ users ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -199,7 +248,7 @@ paths:
       summary: Удалить пользователя
       tags: [ users ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -228,12 +277,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 
-  /api/users/{utgid}/weight-history:
+  /api/users/{user_id}/weight-history:
     get:
       summary: Получить историю веса пользователя
       tags: [ weight-history ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -271,7 +320,7 @@ paths:
       summary: Добавить запись веса пользователя
       tags: [ weight-history ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -310,12 +359,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 
-  /api/users/{utgid}/plans:
+  /api/users/{user_id}/plans:
     get:
       summary: Получить список планов
       tags: [ plans ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -371,7 +420,7 @@ paths:
       summary: Создать или актуализировать план на ближайшие 7 дней
       tags: [ plans ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -411,12 +460,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/users/{utgid}/actions:
+  /api/users/{user_id}/actions:
     get:
       summary: Получить список действий
       tags: [ actions ]
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -469,7 +518,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
       parameters:
-        - name: utgid
+        - name: user_id
           in: path
           required: true
           schema:
@@ -604,16 +653,21 @@ paths:
 
 components:
   securitySchemes:
-    TelegramInitData:
-      type: apiKey
-      in: header
-      name: initData
-      description: Передавайте настоящее initData из Telegram Mini App.
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque access token
   schemas:
+    Credentials:
+      type: object
+      required: [ username, password ]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 32 }
+        password: { type: string, minLength: 10, maxLength: 72 }
     UserResponse:
       type: object
       properties:
-        utgid:
+        user_id:
           type: integer
           format: int64
         gender:
@@ -647,10 +701,6 @@ components:
         - height
         - name
       properties:
-        utgid:
-          type: integer
-          format: int64
-          description: При создании сервер берёт идентификатор из initData; значение из тела запроса игнорируется.
         gender:
           type: string
           enum: [ Male, Female ]
@@ -711,7 +761,7 @@ components:
     UserWeightHistoryResponse:
       type: object
       properties:
-        utgid:
+        user_id:
           type: integer
           format: int64
         date:
@@ -751,7 +801,7 @@ components:
         id:
           type: string
           format: uuid
-        utgid:
+        user_id:
           type: integer
           format: int64
         date:
@@ -785,7 +835,7 @@ components:
         id:
           type: string
           format: uuid
-        utgid:
+        user_id:
           type: integer
           format: int64
         date:

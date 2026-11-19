@@ -22,17 +22,17 @@ func NewUserWeightHistoryHandler(userUC *usecase.UserUseCase, userWeightHistoryU
 }
 
 func (h *UserWeightHistoryHandler) GetUserWeightHistory(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), user_id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
 
-	userWeightHistory, err := h.userWeightHistoryUC.GetUserWeightHistory(c.Request.Context(), utgid)
+	userWeightHistory, err := h.userWeightHistoryUC.GetUserWeightHistory(c.Request.Context(), user_id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -47,12 +47,12 @@ func (h *UserWeightHistoryHandler) GetUserWeightHistory(c *gin.Context) {
 }
 
 func (h *UserWeightHistoryHandler) CreateUserWeightHistory(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), user_id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
@@ -68,7 +68,7 @@ func (h *UserWeightHistoryHandler) CreateUserWeightHistory(c *gin.Context) {
 		return
 	}
 
-	domainUserWeightHistory := req.ToUserWeightHistory(utgid)
+	domainUserWeightHistory := req.ToUserWeightHistory(user_id)
 	if err := h.userWeightHistoryUC.Add(c.Request.Context(), domainUserWeightHistory); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

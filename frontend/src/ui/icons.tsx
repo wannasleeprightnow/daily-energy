@@ -3,7 +3,7 @@
  *
  * Every path below is a minimal inline-SVG reproduction of the Figma
  * vector nodes (CalendarWeekFill, ForkAndKnife, Running, Account, Messages,
- * BaselineAccountCircle, Pencil, Check, Cross, CrossMark, PersonStanding,
+ * Pencil, Check, Cross, CrossMark, PersonStanding,
  * PersonWalking, PersonRunning). All are stroke- or fill-based so they can
  * inherit the Figma accent colour (#f08629) or inherit currentColor.
  */
@@ -84,15 +84,6 @@ export function AccountIcon({ size, ...props }: IconProps) {
   return (
     <svg fill="currentColor" viewBox="0 0 24 24" {...base(size, props)}>
       <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6Z" />
-    </svg>
-  );
-}
-
-/** Figma "BaselineAccountCircle" — the avatar in profile (57×57). */
-export function AccountCircleIcon({ size, ...props }: IconProps) {
-  return (
-    <svg fill="currentColor" viewBox="0 0 24 24" {...base(size, props)}>
-      <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 16a8 8 0 0 1-8-8h16a8 8 0 0 1-8 8Z" />
     </svg>
   );
 }

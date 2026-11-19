@@ -11,10 +11,10 @@ type UserWeightHistoryCreate struct {
 	Height int   `json:"height" validate:"required,min=100,max=250"`
 }
 
-func (uw *UserWeightHistoryCreate) ToUserWeightHistory(utgid int64) models.UserWeightHistory {
+func (uw *UserWeightHistoryCreate) ToUserWeightHistory(user_id int64) models.UserWeightHistory {
 	return models.UserWeightHistory{
 		Id:         uuid.New().String(),
-		Utgid:      utgid,
+		UserID:      user_id,
 		Date:       uw.Date,
 		UserWeight: uw.Weight,
 		UserHeight: uw.Height,

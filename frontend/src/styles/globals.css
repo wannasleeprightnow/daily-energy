@@ -62,7 +62,7 @@ body {
   background-color: #212121;
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
   /* `hidden` also makes overflow-y compute to `auto`, creating a nested
-     scroller that fights Telegram's WebView/document scrolling on iOS. */
+     scroller that fights document scrolling on iOS. */
   overflow-x: clip;
 }
 

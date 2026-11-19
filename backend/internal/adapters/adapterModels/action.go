@@ -7,7 +7,7 @@ import (
 
 type Action struct {
 	Id           uuid.UUID         `gorm:"column:id;primaryKey"`
-	Utgid        int64             `gorm:"column:utgid"`
+	UserID        int64             `gorm:"column:user_id"`
 	Date         int64             `gorm:"column:date"`
 	ActivityName string            `gorm:"column:activity_name"`
 	Calories     int               `gorm:"column:calories"`

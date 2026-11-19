@@ -17,11 +17,11 @@ func NewPlanRepository(db *gorm.DB) ports.PlanRepository {
 	return &planRepository{db: db}
 }
 
-func (r *planRepository) GetByStartTimeAndFinishTime(ctx context.Context, startAt, finishAt, utgid int64) ([]models.Plan, error) {
+func (r *planRepository) GetByStartTimeAndFinishTime(ctx context.Context, startAt, finishAt, user_id int64) ([]models.Plan, error) {
 	var adapterPlans []adapterModels.Plan
 
 	err := r.db.WithContext(ctx).
-		Where("utgid = ? AND date BETWEEN ? AND ?", utgid, startAt, finishAt).
+		Where("user_id = ? AND date BETWEEN ? AND ?", user_id, startAt, finishAt).
 		Find(&adapterPlans).Error
 
 	if err != nil {
@@ -31,11 +31,11 @@ func (r *planRepository) GetByStartTimeAndFinishTime(ctx context.Context, startA
 	return toDomainPlans(adapterPlans), nil
 }
 
-func (r *planRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Context, startAt, finishAt, utgid int64, planType string) ([]models.Plan, error) {
+func (r *planRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Context, startAt, finishAt, user_id int64, planType string) ([]models.Plan, error) {
 	var adapterPlans []adapterModels.Plan
 
 	err := r.db.WithContext(ctx).
-		Where("utgid = ? AND type = ? AND date BETWEEN ? AND ?", utgid, planType, startAt, finishAt).
+		Where("user_id = ? AND type = ? AND date BETWEEN ? AND ?", user_id, planType, startAt, finishAt).
 		Find(&adapterPlans).Error
 
 	if err != nil {
@@ -51,7 +51,7 @@ func (r *planRepository) Save(ctx context.Context, plans []models.Plan) error {
 		return nil
 	}
 	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "utgid"}, {Name: "date"}, {Name: "type"}},
+		Columns:   []clause.Column{{Name: "user_id"}, {Name: "date"}, {Name: "type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"calories_to_consume", "calories_to_burn", "recommendation", "profile_hash"}),
 	}).Create(&plansAdapter).Error; err != nil {
 		return err

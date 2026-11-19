@@ -18,6 +18,6 @@ func (uwc *UserWeightHistoryUseCase) Add(ctx context.Context, userWeightHistory 
 	return uwc.repo.Save(ctx, userWeightHistory)
 }
 
-func (uwc *UserWeightHistoryUseCase) GetUserWeightHistory(ctx context.Context, utgid int64) ([]models.UserWeightHistory, error) {
-	return uwc.repo.GetUserWeightHistory(ctx, utgid)
+func (uwc *UserWeightHistoryUseCase) GetUserWeightHistory(ctx context.Context, user_id int64) ([]models.UserWeightHistory, error) {
+	return uwc.repo.GetUserWeightHistory(ctx, user_id)
 }

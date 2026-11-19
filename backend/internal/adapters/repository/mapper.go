@@ -8,7 +8,7 @@ import (
 
 func toDomainUser(u adapterModels.User) models.User {
 	return models.User{
-		Utgid:             u.Utgid,
+		UserID:             u.UserID,
 		Name:              u.Name,
 		Gender:            u.Gender,
 		DateofBirth:       u.DateofBirth,
@@ -24,7 +24,7 @@ func toDomainUser(u adapterModels.User) models.User {
 
 func toAdapterUser(u models.User) adapterModels.User {
 	return adapterModels.User{
-		Utgid:             u.Utgid,
+		UserID:             u.UserID,
 		Name:              u.Name,
 		Gender:            u.Gender,
 		DateofBirth:       u.DateofBirth,
@@ -41,7 +41,7 @@ func toAdapterUser(u models.User) adapterModels.User {
 func toDomainAction(a adapterModels.Action) models.Action {
 	return models.Action{
 		Id:           a.Id.String(),
-		Utgid:        a.Utgid,
+		UserID:        a.UserID,
 		Date:         a.Date,
 		ActivityName: a.ActivityName,
 		Calories:     a.Calories,
@@ -67,7 +67,7 @@ func toAdapterAction(a models.Action) adapterModels.Action {
 	}
 	return adapterModels.Action{
 		Id:           id,
-		Utgid:        a.Utgid,
+		UserID:        a.UserID,
 		Date:         a.Date,
 		ActivityName: a.ActivityName,
 		Calories:     a.Calories,
@@ -94,7 +94,7 @@ func toDomainPlans(plans []adapterModels.Plan) []models.Plan {
 	for i, p := range plans {
 		res[i] = models.Plan{
 			Id:                p.Id.String(),
-			Utgid:             p.Utgid,
+			UserID:             p.UserID,
 			Date:              p.Date,
 			CaloriesToConsume: p.CaloriesToConsume,
 			CaloriesToBurn:    p.CaloriesToBurn,
@@ -118,7 +118,7 @@ func toAdapterPlans(plans []models.Plan) []adapterModels.Plan {
 		}
 		res[i] = adapterModels.Plan{
 			Id:                id,
-			Utgid:             p.Utgid,
+			UserID:             p.UserID,
 			Date:              p.Date,
 			CaloriesToConsume: p.CaloriesToConsume,
 			CaloriesToBurn:    p.CaloriesToBurn,
@@ -138,7 +138,7 @@ func toDomainUserWeightHistory(histories []adapterModels.UserWeightHistory) []mo
 	for i, h := range histories {
 		res[i] = models.UserWeightHistory{
 			Id:         h.Id.String(),
-			Utgid:      h.Utgid,
+			UserID:      h.UserID,
 			Date:       h.Date,
 			UserWeight: h.UserWeight,
 			UserHeight: h.UserHeight,
@@ -159,7 +159,7 @@ func toAdapterUserWeightHistory(histories []models.UserWeightHistory) []adapterM
 		}
 		res[i] = adapterModels.UserWeightHistory{
 			Id:         id,
-			Utgid:      h.Utgid,
+			UserID:      h.UserID,
 			Date:       h.Date,
 			UserWeight: h.UserWeight,
 			UserHeight: h.UserHeight,

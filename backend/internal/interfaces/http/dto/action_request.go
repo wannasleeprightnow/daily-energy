@@ -12,10 +12,10 @@ type ActionRequest struct {
 	Type         models.ActionType `json:"type" validate:"required"`
 }
 
-func (a *ActionRequest) ToAction(utgid int64) models.Action {
+func (a *ActionRequest) ToAction(user_id int64) models.Action {
 	return models.Action{
 		Id:           uuid.New().String(),
-		Utgid:        utgid,
+		UserID:        user_id,
 		Date:         a.Date,
 		ActivityName: a.ActivityName,
 		Calories:     a.Calories,

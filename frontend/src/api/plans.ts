@@ -13,14 +13,14 @@ export interface ListRange {
   finish_at: number;
 }
 
-/** GET /api/users/{utgid}/actions */
+/** GET /api/users/{user_id}/actions */
 export async function listActions(
-  utgid: number,
+  user_id: number,
   range: ListRange,
   type?: ActionType,
 ): Promise<ActionResponse[]> {
   const { data } = await http.get<ActionResponse[]>(
-    `/api/users/${utgid}/actions`,
+    `/api/users/${user_id}/actions`,
     {
       params: {
         start_at: range.start_at,
@@ -33,13 +33,13 @@ export async function listActions(
   return data;
 }
 
-/** POST /api/users/{utgid}/actions */
+/** POST /api/users/{user_id}/actions */
 export async function createAction(
-  utgid: number,
+  user_id: number,
   action: ActionRequest,
 ): Promise<ActionResponse> {
   const { data } = await http.post<ActionResponse>(
-    `/api/users/${utgid}/actions`,
+    `/api/users/${user_id}/actions`,
     action,
   );
 
@@ -53,13 +53,13 @@ export async function getAction(id: string): Promise<ActionResponse> {
   return data;
 }
 
-/** GET /api/users/{utgid}/plans */
+/** GET /api/users/{user_id}/plans */
 export async function listPlans(
-  utgid: number,
+  user_id: number,
   range: ListRange,
   type?: ActionType,
 ): Promise<PlanResponse[]> {
-  const { data } = await http.get<PlanResponse[]>(`/api/users/${utgid}/plans`, {
+  const { data } = await http.get<PlanResponse[]>(`/api/users/${user_id}/plans`, {
     params: {
       start_at: range.start_at,
       finish_at: range.finish_at,
@@ -70,13 +70,13 @@ export async function listPlans(
   return data;
 }
 
-/** POST /api/users/{utgid}/plans — idempotently ensures the seven-day horizon. */
+/** POST /api/users/{user_id}/plans — idempotently ensures the seven-day horizon. */
 export async function createPlan(
-  utgid: number,
+  user_id: number,
   plan: PlanRequest,
 ): Promise<PlanResponse[]> {
   const { data } = await http.post<PlanResponse[]>(
-    `/api/users/${utgid}/plans`,
+    `/api/users/${user_id}/plans`,
     plan,
     { timeout: 170_000 },
   );

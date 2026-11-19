@@ -31,7 +31,7 @@ import {
 
 
 interface DayContentProps {
-  utgid: number;
+  user_id: number;
   /** How the header is labelled. */
   mode: "today" | "plan" | "history";
 }
@@ -44,14 +44,14 @@ interface DayContentProps {
  *  - plan    -> the day picked via the calendar
  *  - history -> the day picked via the calendar (or yesterday)
  */
-export function DayContent({ utgid, mode }: DayContentProps) {
+export function DayContent({ user_id, mode }: DayContentProps) {
   const navigate = useNavigate();
   const { kind = "food" } = useParams();
   const [addOpen, setAddOpen] = useState(false);
   const activityType: ActionType = kind === "activity" ? "Activity" : "Food";
 
   // Allow a specific day to be picked from the calendar screen.
-  const stored = readDayFromStorage(utgid);
+  const stored = readDayFromStorage(user_id);
   const anchor = useMemo(() => {
     const today = nowStartOfDay();
 
@@ -69,23 +69,23 @@ export function DayContent({ utgid, mode }: DayContentProps) {
     d.setDate(d.getDate() + 1);
 
     return d;
-  }, [mode, stored, utgid]);
+  }, [mode, stored, user_id]);
 
   const range = useMemo(() => dayRange(anchor), [anchor]);
   const { data: actions, isLoading: actionsLoading } = useActions(
-    utgid,
+    user_id,
     range,
     activityType,
   );
   const { data: plans, isLoading: plansLoading } = usePlans(
-    utgid,
+    user_id,
     range,
     activityType,
   );
-  const isEnsuringPlan = useIsEnsuringPlan(utgid);
-  const { data: user } = useUser(utgid);
+  const isEnsuringPlan = useIsEnsuringPlan(user_id);
+  const { data: user } = useUser(user_id);
   const profileKey = getPlanProfileKey(user);
-  const isRefreshingForProfile = useIsRefreshingFuturePlan(utgid, profileKey);
+  const isRefreshingForProfile = useIsRefreshingFuturePlan(user_id, profileKey);
   const today = nowStartOfDay();
   const lastPlanDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 6);
   const isFuturePlanDay = anchor > today && anchor <= lastPlanDay;
@@ -171,7 +171,7 @@ export function DayContent({ utgid, mode }: DayContentProps) {
         date={anchor}
         open={addOpen}
         type={activityType}
-        utgid={utgid}
+        user_id={user_id}
         onCalendar={() => navigate("/calendar")}
         onClose={() => setAddOpen(false)}
       />
@@ -298,9 +298,9 @@ interface StoredDay {
   mode: string;
 }
 
-function readDayFromStorage(utgid: number): StoredDay | null {
+function readDayFromStorage(user_id: number): StoredDay | null {
   try {
-    const raw = window.localStorage.getItem(`daily-energy:day:${utgid}`);
+    const raw = window.localStorage.getItem(`daily-energy:day:${user_id}`);
 
     if (!raw) return null;
     const { timestamp, mode } = JSON.parse(raw) as {
@@ -316,13 +316,13 @@ function readDayFromStorage(utgid: number): StoredDay | null {
 
 /** Store the date picked on the calendar screen so Today/Plan/History honour it. */
 export function writeDayPick(
-  utgid: number,
+  user_id: number,
   date: Date,
   mode: "today" | "plan" | "history",
 ): void {
   try {
     window.localStorage.setItem(
-      `daily-energy:day:${utgid}`,
+      `daily-energy:day:${user_id}`,
       JSON.stringify({ timestamp: Math.floor(date.getTime() / 1000), mode }),
     );
   } catch {

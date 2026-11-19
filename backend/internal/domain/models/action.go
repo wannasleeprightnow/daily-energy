@@ -9,7 +9,7 @@ const (
 
 type Action struct {
 	Id           string
-	Utgid        int64
+	UserID        int64
 	Date         int64
 	ActivityName string
 	Calories     int

@@ -29,7 +29,7 @@ func TestProfileAndWeightHistoryMeasurementLimits(t *testing.T) {
 	dtoFactories := map[string]func(measurements) any{
 		"user create": func(m measurements) any {
 			return UserCreate{
-				Utgid: 1, Name: "Test", DateofBirth: 1,
+				UserID: 1, Name: "Test", DateofBirth: 1,
 				Weight: m.weight, Height: m.height,
 			}
 		},
