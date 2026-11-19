@@ -17,46 +17,46 @@ export async function createUser(
   return data;
 }
 
-/** GET /api/users/{utgid} — fetch a user by Telegram id. */
-export async function getUser(utgid: number): Promise<UserResponse> {
-  const { data } = await http.get<UserResponse>(`/api/users/${utgid}`);
+/** GET /api/users/{user_id} — fetch the authenticated account's profile. */
+export async function getUser(user_id: number): Promise<UserResponse> {
+  const { data } = await http.get<UserResponse>(`/api/users/${user_id}`);
 
   return data;
 }
 
-/** PUT /api/users/{utgid} — update user profile. */
+/** PUT /api/users/{user_id} — update user profile. */
 export async function updateUser(
-  utgid: number,
+  user_id: number,
   patch: UserRequest,
 ): Promise<UserResponse> {
-  const { data } = await http.put<UserResponse>(`/api/users/${utgid}`, patch);
+  const { data } = await http.put<UserResponse>(`/api/users/${user_id}`, patch);
 
   return data;
 }
 
-/** DELETE /api/users/{utgid} — delete a user. */
-export async function deleteUser(utgid: number): Promise<void> {
-  await http.delete(`/api/users/${utgid}`);
+/** DELETE /api/users/{user_id} — delete a user. */
+export async function deleteUser(user_id: number): Promise<void> {
+  await http.delete(`/api/users/${user_id}`);
 }
 
-/** GET /api/users/{utgid}/weight-history */
+/** GET /api/users/{user_id}/weight-history */
 export async function getWeightHistory(
-  utgid: number,
+  user_id: number,
 ): Promise<UserWeightHistoryResponse[]> {
   const { data } = await http.get<UserWeightHistoryResponse[]>(
-    `/api/users/${utgid}/weight-history`,
+    `/api/users/${user_id}/weight-history`,
   );
 
   return data;
 }
 
-/** POST /api/users/{utgid}/weight-history */
+/** POST /api/users/{user_id}/weight-history */
 export async function addWeightEntry(
-  utgid: number,
+  user_id: number,
   entry: UserWeightHistoryRequest,
 ): Promise<UserWeightHistoryResponse> {
   const { data } = await http.post<UserWeightHistoryResponse>(
-    `/api/users/${utgid}/weight-history`,
+    `/api/users/${user_id}/weight-history`,
     entry,
   );
 

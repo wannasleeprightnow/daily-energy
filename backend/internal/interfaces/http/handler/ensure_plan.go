@@ -25,11 +25,11 @@ const planGenerationAttempts = 2
 func (h *PlanHandler) CreatePlan(c *gin.Context) { h.EnsurePlan(c) }
 
 func (h *PlanHandler) EnsurePlan(c *gin.Context) {
-	utgid, ok := authenticatedPlanUser(c)
+	user_id, ok := authenticatedPlanUser(c)
 	if !ok {
 		return
 	}
-	user, err := h.userUC.Execute(c.Request.Context(), utgid)
+	user, err := h.userUC.Execute(c.Request.Context(), user_id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
@@ -66,7 +66,7 @@ func authenticatedPlanUser(c *gin.Context) (int64, bool) {
 		return 0, false
 	}
 	if userID < 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid utgid in URL"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id in URL"})
 		return 0, false
 	}
 	return userID, true
@@ -80,7 +80,7 @@ func (h *PlanHandler) ensurePlan(ctx context.Context, user models.User, timezone
 	for _, date := range dates {
 		dateSet[date.Unix()] = true
 	}
-	existing, err := h.planUC.GetByStartTimeAndFinishTime(ctx, dates[0].Unix(), dates[len(dates)-1].AddDate(0, 0, 1).Unix(), user.Utgid)
+	existing, err := h.planUC.GetByStartTimeAndFinishTime(ctx, dates[0].Unix(), dates[len(dates)-1].AddDate(0, 0, 1).Unix(), user.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (h *PlanHandler) ensurePlan(ctx context.Context, user models.User, timezone
 		return nil, err
 	}
 	// Return the full requested horizon after the upsert.
-	updated, err := h.planUC.GetByStartTimeAndFinishTime(ctx, dates[0].Unix(), dates[len(dates)-1].AddDate(0, 0, 1).Unix(), user.Utgid)
+	updated, err := h.planUC.GetByStartTimeAndFinishTime(ctx, dates[0].Unix(), dates[len(dates)-1].AddDate(0, 0, 1).Unix(), user.UserID)
 	if err != nil {
 		return nil, err
 	}

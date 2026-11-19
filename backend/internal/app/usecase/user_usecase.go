@@ -15,18 +15,18 @@ func NewUserUseCase(repo ports.UserRepository) *UserUseCase {
 	return &UserUseCase{repo: repo}
 }
 
-func (uc *UserUseCase) Execute(ctx context.Context, utgid int64) (models.User, error) {
-	return uc.repo.GetByUtgid(ctx, utgid)
+func (uc *UserUseCase) Execute(ctx context.Context, user_id int64) (models.User, error) {
+	return uc.repo.GetByUserID(ctx, user_id)
 }
 
 func (uc *UserUseCase) Add(ctx context.Context, user models.User) error {
 	return uc.repo.Save(ctx, user)
 }
 
-func (uc *UserUseCase) Update(ctx context.Context, utgid int64, req dto.UserRequest) (models.User, error) {
-	return uc.repo.Update(ctx, utgid, req.ToUser())
+func (uc *UserUseCase) Update(ctx context.Context, user_id int64, req dto.UserRequest) (models.User, error) {
+	return uc.repo.Update(ctx, user_id, req.ToUser())
 }
 
-func (uc *UserUseCase) Delete(ctx context.Context, utgid int64) error {
-	return uc.repo.Delete(ctx, utgid)
+func (uc *UserUseCase) Delete(ctx context.Context, user_id int64) error {
+	return uc.repo.Delete(ctx, user_id)
 }

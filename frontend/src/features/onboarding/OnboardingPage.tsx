@@ -18,14 +18,9 @@ import { Spinner, Text } from "@/ui";
 import { springs, stepVariants } from "@/ui/motion";
 import { AppShell } from "@/ui/AppShell";
 import { colors } from "@/design/tokens";
-import { haptic } from "@/lib/telegram";
+import { useAuth } from "@/app/AuthProvider";
 
 const TOTAL_STEPS = 7;
-
-interface OnboardingPageProps {
-  tgId: number;
-  name?: string;
-}
 
 /**
  * Multi-step onboarding wizard.
@@ -35,7 +30,8 @@ interface OnboardingPageProps {
  * On success we call POST /api/users; react-query invalidates the user query,
  * which re-renders the root App into the main shell.
  */
-export function OnboardingPage({ name }: OnboardingPageProps) {
+export function OnboardingPage() {
+  const { signOut } = useAuth();
   const store = useOnboardingStore();
   const { draft, ...actions } = store();
   const [step, setStep] = useState(0);
@@ -56,14 +52,9 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
     const profile = draftToProfile(draft);
 
     if (!profile) {
-      haptic("warning");
-
       return;
     }
-    createUser.mutate(profile, {
-      onSuccess: () => haptic("success"),
-      onError: () => haptic("error"),
-    });
+    createUser.mutate(profile);
   };
 
   if (createUser.isPending) {
@@ -88,8 +79,9 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
   const isLast = step === TOTAL_STEPS - 1;
 
   return (
-    <div style={{ backgroundColor: colors.bg }}>
-      <AnimatePresence custom={direction} initial={false} mode="wait">
+      <div className="relative" style={{ backgroundColor: colors.bg }}>
+        <button className="absolute right-5 top-4 z-10 text-sm text-[#ff7700]" onClick={() => void signOut()} type="button">Выйти</button>
+        <AnimatePresence custom={direction} initial={false} mode="wait">
         <m.div
           key={step}
           animate="center"
@@ -100,7 +92,7 @@ export function OnboardingPage({ name }: OnboardingPageProps) {
         >
           {step === 0 && (
             <NameStep
-              initialName={name ?? ""}
+              initialName=""
               step={step}
               total={TOTAL_STEPS}
               onBack={() => window.history.back()}

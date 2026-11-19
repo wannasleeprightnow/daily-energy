@@ -1,0 +1,54 @@
+name: daily-energy-local
+
+services:
+  postgres-local:
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env.local}
+      POSTGRES_USER: ${DB_USERNAME:?Set DB_USERNAME in .env.local}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.local}
+    ports:
+      - "127.0.0.1:${LOCAL_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres-local-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend-local:
+    image: daily-energy-backend:local
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env.local
+    environment:
+      DB_HOST: postgres-local
+      DB_PORT: 5432
+      APP_URL: http://localhost:5173
+      ALLOW_ORIGINS: http://localhost:5173
+      COOKIE_SECURE: "false"
+    ports:
+      - "127.0.0.1:${LOCAL_BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres-local:
+        condition: service_healthy
+
+  frontend-local:
+    image: daily-energy-frontend:local
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    ports:
+      - "127.0.0.1:${LOCAL_FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend-local:
+        condition: service_started
+
+volumes:
+  postgres-local-data:
+    name: daily-energy-local-postgres-data

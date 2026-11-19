@@ -25,10 +25,10 @@ func (r *userWeightHistoryRepository) Save(ctx context.Context, userWeightHistor
 	return nil
 }
 
-func (r *userWeightHistoryRepository) GetUserWeightHistory(ctx context.Context, utgid int64) ([]models.UserWeightHistory, error) {
+func (r *userWeightHistoryRepository) GetUserWeightHistory(ctx context.Context, user_id int64) ([]models.UserWeightHistory, error) {
 	var adapterUserWeightHistory []adapterModels.UserWeightHistory
 
-	if err := r.db.WithContext(ctx).Where("utgid = ?", utgid).Find(&adapterUserWeightHistory).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("user_id = ?", user_id).Find(&adapterUserWeightHistory).Error; err != nil {
 		return []models.UserWeightHistory{}, err
 	}
 

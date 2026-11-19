@@ -6,8 +6,9 @@ import remarkGfm from "remark-gfm";
 import { Button } from "@/ui";
 import { easings, fadeInUp, springs } from "@/ui/motion";
 import { useUser } from "@/hooks/useUser";
-import { getInitData, getTgUser } from "@/lib/telegram";
 import { API_URL } from "@/constants";
+import { getAccessToken, refreshAccessToken } from "@/api/auth";
+import { useAuth } from "@/app/AuthProvider";
 import logo from "@/assets/logo.png";
 
 interface Message {
@@ -33,9 +34,9 @@ interface ChatProfileContext {
 const CHAT_ERROR = "Не удалось получить ответ от Рафика. Попробуй ещё раз.";
 
 export function ChatPage() {
-  const tgUser = getTgUser();
-  const { data, isError: profileLoadFailed } = useUser(tgUser?.id ?? -1);
-  const userName = data?.name?.split(" ")[0] ?? tgUser?.first_name ?? "друг";
+  const { account } = useAuth();
+  const { data, isError: profileLoadFailed } = useUser(account?.id ?? -1);
+  const userName = data?.name?.split(" ")[0] ?? "друг";
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -58,18 +59,15 @@ export function ChatPage() {
     const endpoint = new URL("/api/ws/chat", API_URL || window.location.origin);
 
     endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
-    const initData = getInitData();
-    const protocols = initData
-      ? [`daily-energy-initdata.${toBase64Url(initData)}`, "daily-energy-chat"]
-      : undefined;
-
     let disposed = false;
     let retryTimer: number | undefined;
     let bannerTimer: number | undefined;
     let retryAttempt = 0;
 
-    const connect = () => {
+    const connect = async () => {
       if (disposed) return;
+      const token = getAccessToken() ?? await refreshAccessToken();
+      if (!token || disposed) return;
       // Each websocket connection starts a fresh conversation on the server.
       profileContextSentRef.current = false;
       setConnectionState(retryAttempt === 0 ? "connecting" : "reconnecting");
@@ -86,9 +84,7 @@ export function ChatPage() {
       } else {
         setShowConnectionBanner(true);
       }
-      const socket = protocols
-        ? new WebSocket(endpoint, protocols)
-        : new WebSocket(endpoint);
+      const socket = new WebSocket(endpoint, [`daily-energy-token.${token}`, "daily-energy-chat"]);
 
       socketRef.current = socket;
 
@@ -175,7 +171,7 @@ export function ChatPage() {
       const socket = socketRef.current;
 
       if (!text || busy) return;
-      if (data === undefined && !profileLoadFailed && tgUser?.id) {
+      if (data === undefined && !profileLoadFailed && account?.id) {
         setError("Загружаю твой профиль. Попробуй отправить сообщение ещё раз через пару секунд.");
 
         return;
@@ -216,7 +212,7 @@ export function ChatPage() {
         setError(CHAT_ERROR);
       }
     },
-    [busy, data, profileLoadFailed, tgUser?.id],
+    [busy, data, profileLoadFailed, account?.id],
   );
 
   const send = useCallback(() => sendText(draft), [draft, sendText]);
@@ -449,15 +445,6 @@ function ChatInput({
       </Button>
     </div>
   );
-}
-
-function toBase64Url(value: string): string {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
-
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function getChatProfileContext(user: NonNullable<ReturnType<typeof useUser>["data"]>): ChatProfileContext {

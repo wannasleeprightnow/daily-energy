@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/isiyar/daily-energy/backend/bot"
 	"github.com/isiyar/daily-energy/backend/config"
 	"github.com/isiyar/daily-energy/backend/internal/adapters/db"
 	"github.com/isiyar/daily-energy/backend/internal/adapters/http/router"
@@ -35,7 +34,6 @@ func run() error {
 		return err
 	}
 
-	go bot.RunBot(&cfg)
 	r := newRouter(cfg, dbConn)
 	if err := r.Run(); err != nil {
 		return err
@@ -61,7 +59,8 @@ func newRouter(cfg config.Config, dbConn *gorm.DB) *gin.Engine {
 	planHandler := handler.NewPlanHandler(cfg, planUC, userUC)
 
 	aiHandler := handler.NewAiHandler(cfg)
-	chatHandler := handler.NewChatHandler(cfg)
+	chatConnections := handler.NewChatConnections()
+	chatHandler := handler.NewChatHandler(cfg, dbConn, chatConnections)
 
 	h := handler.NewHandler(
 		actionHandler,
@@ -77,12 +76,13 @@ func newRouter(cfg config.Config, dbConn *gorm.DB) *gin.Engine {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:  allowedOrigins(cfg.AllowOrigins),
 		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization", "initdata"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
 		ExposeHeaders: []string{"Content-Length"},
 	}))
 
 	apiGroup := r.Group("/api")
-	router.RegisterRoutes(apiGroup, h, cfg)
+	router.RegisterRoutes(apiGroup, h, cfg, dbConn, chatConnections)
 	return r
 }
 

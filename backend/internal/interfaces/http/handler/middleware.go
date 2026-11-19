@@ -1,44 +1,38 @@
 package handler
 
 import (
-	"encoding/base64"
-	"github.com/gin-gonic/gin"
-	"github.com/isiyar/daily-energy/backend/pkg/validator"
-	"log"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/isiyar/daily-energy/backend/internal/adapters/adapterModels"
+	"gorm.io/gorm"
 )
 
-func TelegramAuthMiddleware(botToken string) gin.HandlerFunc {
+func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		initData := c.GetHeader("initData")
-		if initData == "" && c.IsWebsocket() {
+		token := ""
+		if header := c.GetHeader("Authorization"); strings.HasPrefix(header, "Bearer ") { token = strings.TrimPrefix(header, "Bearer ") }
+		if c.IsWebsocket() && token == "" {
 			for _, protocol := range strings.Split(c.GetHeader("Sec-WebSocket-Protocol"), ",") {
 				protocol = strings.TrimSpace(protocol)
-				const prefix = "daily-energy-initdata."
-				if strings.HasPrefix(protocol, prefix) {
-					decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(protocol, prefix))
-					if err == nil {
-						initData = string(decoded)
-					}
-					break
-				}
+				if strings.HasPrefix(protocol, "daily-energy-token.") { token = strings.TrimPrefix(protocol, "daily-energy-token."); break }
 			}
 		}
-		if initData == "" {
-			log.Println("Missing initData header")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing initData"})
-			return
+		if token == "" { c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error":"missing access token"}); return }
+		var access adapterModels.AccessToken
+		if err := db.WithContext(c.Request.Context()).Where("token_hash = ? AND expires_at > ?", tokenHash(token), time.Now().UTC()).First(&access).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error":"invalid access token"}); return
 		}
-
-		utgid, err := validator.GetTelegramUserID(initData, botToken)
-		if err != nil {
-			log.Printf("Invalid initData: %v", err)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid initData"})
-			return
+		var session adapterModels.AuthSession
+		if err := db.WithContext(c.Request.Context()).Where("id = ? AND revoked_at IS NULL AND expires_at > ?", access.SessionID, time.Now().UTC()).First(&session).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error":"invalid session"}); return
 		}
-
-		c.Set("utgid", utgid)
+		c.Set("user_id", strconv.FormatInt(session.AccountID, 10))
+		c.Set("session_id", session.ID)
+		c.Set("access_expires_at", access.ExpiresAt)
 		c.Next()
 	}
 }

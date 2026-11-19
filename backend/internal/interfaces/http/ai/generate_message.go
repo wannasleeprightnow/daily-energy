@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-const ModelName = "inception/mercury-2.5"
+const ModelName = "openai/gpt-6-luna"
 
 func GenerateMessage(systemPrompt string, userPrompt string, maxTokens ...int) ([]byte, error) {
 	requestBody := ChatRequest{

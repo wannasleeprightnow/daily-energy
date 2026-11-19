@@ -30,11 +30,11 @@ func (r *actionRepository) GetById(ctx context.Context, id string) (models.Actio
 	return toDomainAction(a), nil
 }
 
-func (r *actionRepository) GetByStartTimeAndFinishTime(ctx context.Context, startAt, finishAt, utgid int64) ([]models.Action, error) {
+func (r *actionRepository) GetByStartTimeAndFinishTime(ctx context.Context, startAt, finishAt, user_id int64) ([]models.Action, error) {
 	var adapterActions []adapterModels.Action
 
 	err := r.db.WithContext(ctx).
-		Where("utgid = ? AND date BETWEEN ? AND ?", utgid, startAt, finishAt).
+		Where("user_id = ? AND date BETWEEN ? AND ?", user_id, startAt, finishAt).
 		Order("date DESC").
 		Find(&adapterActions).Error
 
@@ -45,11 +45,11 @@ func (r *actionRepository) GetByStartTimeAndFinishTime(ctx context.Context, star
 	return toDomainActions(adapterActions), nil
 }
 
-func (r *actionRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Context, startAt, finishAt, utgid int64, actionType string) ([]models.Action, error) {
+func (r *actionRepository) GetByStartTimeAndFinishTimeAndType(ctx context.Context, startAt, finishAt, user_id int64, actionType string) ([]models.Action, error) {
 	var adapterActions []adapterModels.Action
 
 	err := r.db.WithContext(ctx).
-		Where("utgid = ? AND type = ? AND date BETWEEN ? AND ?", utgid, actionType, startAt, finishAt).
+		Where("user_id = ? AND type = ? AND date BETWEEN ? AND ?", user_id, actionType, startAt, finishAt).
 		Order("date DESC").
 		Find(&adapterActions).Error
 

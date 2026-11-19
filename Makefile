@@ -1,13 +1,20 @@
-# Production entry points for Daily Energy.
+# Local and production entry points for Daily Energy.
 
 DC ?= sudo docker compose
+DC_LOCAL ?= docker compose --env-file .env.local -f docker-compose.local.yml
 CONFIGURE := ./scripts/configure.sh
 
-.PHONY: help configure configure-prod up down stop logs restart ps build prod \
+.PHONY: help configure configure-prod configure-local up up-local down down-local \
+        stop logs logs-local restart ps ps-local build build-local prod \
         build-frontend build-backend format
 
 help:
-	@echo "Daily Energy — production commands:"
+	@echo "Daily Energy commands:"
+	@echo "  make configure-local Prepare .env.local for HTTP-only local deployment"
+	@echo "  make up-local        Build and start the local stack (no certificate)"
+	@echo "  make down-local      Stop the local stack and preserve its database"
+	@echo "  make logs-local      Follow local stack logs"
+	@echo "  make ps-local        Show local service status"
 	@echo "  make configure-prod   Prepare .env from .env.example"
 	@echo "  make up               Build images sequentially and start production"
 	@echo "  make down             Stop the stack and remove database volumes"
@@ -23,11 +30,20 @@ configure: configure-prod
 configure-prod:
 	$(CONFIGURE) prod
 
+configure-local:
+	$(CONFIGURE) local
+
 up: build
 	$(DC) up -d --remove-orphans
 
+up-local: configure-local
+	$(DC_LOCAL) up --build -d --remove-orphans
+
 down:
 	$(DC) down -v --remove-orphans
+
+down-local:
+	$(DC_LOCAL) down --remove-orphans
 
 stop:
 	$(DC) down --remove-orphans
@@ -35,15 +51,24 @@ stop:
 logs:
 	$(DC) logs -f
 
+logs-local:
+	$(DC_LOCAL) logs -f
+
 restart:
 	$(DC) restart
 
 ps:
 	$(DC) ps
 
+ps-local:
+	$(DC_LOCAL) ps
+
 build: configure-prod
 	$(DC) --parallel 1 build backend-prod
 	$(DC) --parallel 1 build frontend-prod
+
+build-local: configure-local
+	$(DC_LOCAL) --parallel 1 build backend-local frontend-local
 
 prod: up
 

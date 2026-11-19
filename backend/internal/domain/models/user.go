@@ -16,7 +16,7 @@ const (
 )
 
 type User struct {
-	Utgid             int64
+	UserID             int64
 	Name              string
 	Gender            Gender
 	DateofBirth       int64

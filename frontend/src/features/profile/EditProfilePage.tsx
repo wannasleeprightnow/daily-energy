@@ -8,10 +8,9 @@ import { ArrowLeftIcon, CheckIcon } from "@/ui/icons";
 import { useUpdateUser, useUser } from "@/hooks/useUser";
 import { apiErrorMessage } from "@/api/client";
 import { MONTHS_RU, LIMITS } from "@/constants";
-import { haptic } from "@/lib/telegram";
 
 interface EditProfilePageProps {
-  utgid: number;
+  user_id: number;
 }
 
 interface Draft {
@@ -45,10 +44,10 @@ const GOAL_OPTIONS: { value: Goal; label: string; emoji: string }[] = [
   { value: "GainMuscleMass", label: "Набрать вес", emoji: "💪" },
 ];
 
-export function EditProfilePage({ utgid }: EditProfilePageProps) {
+export function EditProfilePage({ user_id }: EditProfilePageProps) {
   const navigate = useNavigate();
-  const { data: user, isLoading } = useUser(utgid);
-  const updateUser = useUpdateUser(utgid);
+  const { data: user, isLoading } = useUser(user_id);
+  const updateUser = useUpdateUser(user_id);
   const [draft, setDraft] = useState<Draft | null>(null);
   const originalMeasurements = useRef<Pick<Draft, "weight" | "height"> | null>(null);
 
@@ -108,13 +107,7 @@ export function EditProfilePage({ utgid }: EditProfilePageProps) {
           height: user.height,
         },
       },
-      {
-        onSuccess: () => {
-          haptic("success");
-          void navigate("/profile");
-        },
-        onError: () => haptic("error"),
-      },
+      { onSuccess: () => void navigate("/profile") },
     );
   };
 

@@ -46,7 +46,7 @@ export function emptyDraft(): ProfileDraft {
   };
 }
 
-/** Build the API-safe payload (without utgid, filled at submit time). */
+/** Build the API-safe payload (without user_id, filled at submit time). */
 export function draftToProfile(
   d: ProfileDraft,
 ): {

@@ -26,12 +26,12 @@ func NewActionHandler(actionUC *usecase.ActionUseCase, userUC *usecase.UserUseCa
 }
 
 func (h *ActionHandler) CreateAction(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.userUC.Execute(c.Request.Context(), utgid); errors.Is(err, gorm.ErrRecordNotFound) {
+	if _, err := h.userUC.Execute(c.Request.Context(), user_id); errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
@@ -47,7 +47,7 @@ func (h *ActionHandler) CreateAction(c *gin.Context) {
 		return
 	}
 
-	domainAction := req.ToAction(utgid)
+	domainAction := req.ToAction(user_id)
 	if err := h.actionUC.Add(c.Request.Context(), &domainAction); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -57,7 +57,7 @@ func (h *ActionHandler) CreateAction(c *gin.Context) {
 }
 
 func (h *ActionHandler) GetAction(c *gin.Context) {
-	utgid, ok := userIDFromContext(c)
+	user_id, ok := userIDFromContext(c)
 	if !ok {
 		return
 	}
@@ -69,9 +69,9 @@ func (h *ActionHandler) GetAction(c *gin.Context) {
 		return
 	}
 
-	if action.Utgid != utgid {
-		log.Printf("Utgid mismatch: Action.Utgid=%d, Context=%d", action.Utgid, utgid)
-		c.JSON(http.StatusForbidden, gin.H{"error": "utgid mismatch"})
+	if action.UserID != user_id {
+		log.Printf("UserID mismatch: Action.UserID=%d, Context=%d", action.UserID, user_id)
+		c.JSON(http.StatusForbidden, gin.H{"error": "user_id mismatch"})
 		return
 	}
 
@@ -79,12 +79,12 @@ func (h *ActionHandler) GetAction(c *gin.Context) {
 }
 
 func (h *ActionHandler) GetActions(c *gin.Context) {
-	utgid, ok := authenticatedUserID(c)
+	user_id, ok := authenticatedUserID(c)
 	if !ok {
 		return
 	}
 
-	if _, err := h.userUC.Execute(c.Request.Context(), utgid); err != nil {
+	if _, err := h.userUC.Execute(c.Request.Context(), user_id); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
 	}
@@ -102,7 +102,7 @@ func (h *ActionHandler) GetActions(c *gin.Context) {
 
 	t := c.Query("type")
 
-	actions, err := h.actionUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, utgid, t)
+	actions, err := h.actionUC.GetByStartTimeAndFinishTimeAndType(c.Request.Context(), startInt, finishInt, user_id, t)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

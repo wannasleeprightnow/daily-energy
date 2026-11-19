@@ -117,14 +117,14 @@ func (h *PlanHandler) generatePlanOnce(ctx context.Context, user models.User, ti
 		if err != nil || !expected[date] || daily.Calories <= 0 || len(daily.Recommendations) == 0 {
 			return nil, fmt.Errorf("AI returned invalid nutrition plan for date %q", key)
 		}
-		plans = append(plans, models.Plan{Id: uuid.NewString(), Utgid: user.Utgid, Date: date, CaloriesToConsume: daily.Calories, Recommendation: strings.Join(daily.Recommendations, "\n"), Type: models.Food})
+		plans = append(plans, models.Plan{Id: uuid.NewString(), UserID: user.UserID, Date: date, CaloriesToConsume: daily.Calories, Recommendation: strings.Join(daily.Recommendations, "\n"), Type: models.Food})
 	}
 	for key, daily := range result.Workouts {
 		date, err := strconv.ParseInt(key, 10, 64)
 		if err != nil || !expected[date] || daily.Calories < 0 || len(daily.Recommendations) == 0 {
 			return nil, fmt.Errorf("AI returned invalid activity plan for date %q", key)
 		}
-		plans = append(plans, models.Plan{Id: uuid.NewString(), Utgid: user.Utgid, Date: date, CaloriesToBurn: daily.Calories, Recommendation: strings.Join(daily.Recommendations, "\n"), Type: models.Activity})
+		plans = append(plans, models.Plan{Id: uuid.NewString(), UserID: user.UserID, Date: date, CaloriesToBurn: daily.Calories, Recommendation: strings.Join(daily.Recommendations, "\n"), Type: models.Activity})
 	}
 	return plans, nil
 }

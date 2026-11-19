@@ -9,7 +9,7 @@ export type PhysicalActivity = "Low" | "Medium" | "High";
 export type ActionType = "Food" | "Activity";
 
 export interface UserResponse {
-  utgid: number;
+  user_id: number;
   gender: Gender;
   date_of_birth: number;
   weight: number;
@@ -19,7 +19,7 @@ export interface UserResponse {
   name: string;
 }
 
-export type UserCreate = Required<UserResponse>;
+export type UserCreate = Omit<Required<UserResponse>, "user_id">;
 
 export interface UserRequest {
   name: string;
@@ -32,7 +32,7 @@ export interface UserRequest {
 }
 
 export interface UserWeightHistoryResponse {
-  utgid: number;
+  user_id: number;
   date: number;
   weight: number;
   height: number;
@@ -46,7 +46,7 @@ export interface UserWeightHistoryRequest {
 
 export interface PlanResponse {
   id: string;
-  utgid: number;
+  user_id: number;
   date: number;
   calories_to_consume: number;
   calories_to_burn: number;
@@ -60,7 +60,7 @@ export interface PlanRequest {
 
 export interface ActionResponse {
   id: string;
-  utgid: number;
+  user_id: number;
   date: number;
   activity_name: string;
   calories: number;
@@ -98,4 +98,4 @@ export interface ErrorResponse {
 }
 
 /** Payload collected during onboarding (POST /api/users). */
-export type OnboardingProfile = Omit<UserCreate, "utgid">;
+export type OnboardingProfile = Omit<UserCreate, "user_id">;

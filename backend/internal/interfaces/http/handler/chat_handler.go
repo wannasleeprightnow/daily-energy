@@ -8,15 +8,20 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/isiyar/daily-energy/backend/config"
+	"github.com/isiyar/daily-energy/backend/internal/adapters/adapterModels"
 	"github.com/isiyar/daily-energy/backend/internal/interfaces/http/ai"
+	"gorm.io/gorm"
 )
 
 type ChatHandler struct {
-	c config.Config
+	c           config.Config
+	db          *gorm.DB
+	connections *ChatConnections
 }
 
 type chatClientMessage struct {
@@ -34,9 +39,11 @@ type chatProfileContext struct {
 	PhysicalActivity string `json:"physical_activity"`
 }
 
-func NewChatHandler(c config.Config) *ChatHandler {
+func NewChatHandler(c config.Config, db *gorm.DB, connections *ChatConnections) *ChatHandler {
 	return &ChatHandler{
-		c: c,
+		c:           c,
+		db:          db,
+		connections: connections,
 	}
 }
 
@@ -44,12 +51,16 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		// The browser requires the server to select one of the requested
-		// subprotocols. The auth payload protocol is read by middleware; this
-		// fixed protocol identifies the chat connection without echoing initData.
+		// Select only the fixed chat protocol, never the credential protocol.
 		Subprotocols: []string{"daily-energy-chat"},
 		CheckOrigin: func(r *http.Request) bool {
-			return true
+			origin := r.Header.Get("Origin")
+			parsed, err := url.Parse(origin)
+			if err != nil || parsed.Scheme == "" || parsed.Host == "" { return false }
+			for _, allowed := range strings.Split(h.c.AllowOrigins, ",") {
+				if strings.TrimSpace(allowed) == parsed.Scheme+"://"+parsed.Host { return true }
+			}
+			return false
 		},
 	}
 
@@ -59,6 +70,20 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 		return
 	}
 	defer conn.Close()
+	sessionValue, _ := c.Get("session_id")
+	sessionID, ok := sessionValue.(string)
+	if !ok {
+		return
+	}
+	unregister := h.connections.Register(sessionID, conn)
+	defer unregister()
+	var activeSession adapterModels.AuthSession
+	if err := h.db.WithContext(c.Request.Context()).Where("id = ? AND revoked_at IS NULL AND expires_at > ?", sessionID, time.Now().UTC()).First(&activeSession).Error; err != nil {
+		_ = conn.Close()
+		return
+	}
+	accessExpiry, _ := c.Get("access_expires_at")
+	if expires, ok := accessExpiry.(time.Time); ok { _ = conn.SetReadDeadline(expires) }
 
 	conversationHistory := []ai.Message{
 		{Role: "system", Content: string(h.c.CaloriesAnalyzer)},
@@ -77,6 +102,11 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 		}
 
 		if messageType == websocket.TextMessage {
+			var session adapterModels.AuthSession
+			if err := h.db.WithContext(c.Request.Context()).Where("id = ? AND revoked_at IS NULL AND expires_at > ?", sessionID, time.Now().UTC()).First(&session).Error; err != nil {
+				_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "session ended"), time.Now().Add(time.Second))
+				break
+			}
 			userMessage := string(p)
 			var clientMessage chatClientMessage
 			if json.Unmarshal(p, &clientMessage) == nil && clientMessage.Type == "chat_message" {

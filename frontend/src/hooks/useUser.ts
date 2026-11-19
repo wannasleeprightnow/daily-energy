@@ -10,25 +10,24 @@ import {
   isConflict,
   updateUser,
 } from "@/api/users";
-import { getInitData, getTgId } from "@/lib/telegram";
 
 export const queryKeys = {
-  user: (utgid: number) => ["user", utgid] as const,
-  weightHistory: (utgid: number) => ["weightHistory", utgid] as const,
+  user: (user_id: number) => ["user", user_id] as const,
+  weightHistory: (user_id: number) => ["weightHistory", user_id] as const,
 };
 
 /**
- * Reads the user for the current Telegram account. `null` in `user` means
+ * Reads the user for the current browser account. `null` in `user` means
  * "not created yet" (onboarding required); `undefined` is reserved for the
  * initial loading state managed by React Query.
  */
-export function useUser(utgid?: number) {
+export function useUser(user_id?: number) {
   return useQuery<UserResponse | null, Error>({
-    queryKey: queryKeys.user(utgid ?? -1),
-    enabled: !!utgid,
+    queryKey: queryKeys.user(user_id ?? -1),
+    enabled: !!user_id,
     queryFn: async () => {
       try {
-        return await getUser(utgid as number);
+        return await getUser(user_id as number);
       } catch (err) {
         const error = err as {
           name?: unknown;
@@ -57,12 +56,12 @@ export function useUser(utgid?: number) {
 }
 
 /** Weight history for the profile progress chart. */
-export function useWeightHistory(utgid?: number) {
+export function useWeightHistory(user_id?: number) {
   return useQuery({
-    queryKey: queryKeys.weightHistory(utgid ?? -1),
-    enabled: !!utgid,
+    queryKey: queryKeys.weightHistory(user_id ?? -1),
+    enabled: !!user_id,
     queryFn: async () => {
-      const history = (await getWeightHistory(utgid as number)) ?? [];
+      const history = (await getWeightHistory(user_id as number)) ?? [];
 
       return history.sort((a, b) => a.date - b.date);
     },
@@ -74,24 +73,19 @@ export function useCreateUser() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (profile: Omit<UserCreate, "utgid">) => {
-      const id = getTgId();
-
-      if (!id) throw new Error("Нет Telegram-идентификатора");
-      await createUser({ ...profile, utgid: id });
+    mutationFn: async (profile: Omit<UserCreate, "user_id">) => {
+      await createUser(profile);
 
       return profile;
     },
     onSuccess: () => {
-      const id = getTgId();
-
-      if (id) void qc.invalidateQueries({ queryKey: queryKeys.user(id) });
+      void qc.invalidateQueries({ queryKey: ["user"] });
     },
   });
 }
 
 /** PUT /api/users for the edit-profile flow. */
-export function useUpdateUser(utgid: number) {
+export function useUpdateUser(user_id: number) {
   const qc = useQueryClient();
 
   return useMutation({
@@ -106,28 +100,28 @@ export function useUpdateUser(utgid: number) {
         patch.weight !== previousMeasurements.weight ||
         patch.height !== previousMeasurements.height;
 
-      if (!measurementsChanged) return updateUser(utgid, patch);
+      if (!measurementsChanged) return updateUser(user_id, patch);
 
       // Read history before writing so retries after a partial failure can
       // avoid duplicate snapshots and complete a missing final snapshot.
-      const history = (await getWeightHistory(utgid)) ?? [];
+      const history = (await getWeightHistory(user_id)) ?? [];
       const latest = [...history].sort((a, b) => a.date - b.date).at(-1);
       const snapshotDate = Math.floor(Date.now() / 1000);
 
       if (history.length === 0) {
-        await addWeightEntry(utgid, {
+        await addWeightEntry(user_id, {
           date: Math.max(1, snapshotDate - 1),
           weight: previousMeasurements.weight,
           height: previousMeasurements.height,
         });
       }
 
-      const updatedUser = await updateUser(utgid, patch);
+      const updatedUser = await updateUser(user_id, patch);
 
       if (latest?.weight !== patch.weight || latest?.height !== patch.height) {
         const lastRecordedDate = latest?.date ?? snapshotDate - 1;
 
-        await addWeightEntry(utgid, {
+        await addWeightEntry(user_id, {
           date: Math.max(Math.floor(Date.now() / 1000), lastRecordedDate + 1),
           weight: patch.weight,
           height: patch.height,
@@ -139,11 +133,11 @@ export function useUpdateUser(utgid: number) {
     onSuccess: (updatedUser) => {
       // Publish the saved profile immediately so plan generation starts with
       // the new profile before the user returns to a plan screen.
-      qc.setQueryData(queryKeys.user(utgid), updatedUser);
+      qc.setQueryData(queryKeys.user(user_id), updatedUser);
     },
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: queryKeys.user(utgid) });
-      void qc.invalidateQueries({ queryKey: queryKeys.weightHistory(utgid) });
+      void qc.invalidateQueries({ queryKey: queryKeys.user(user_id) });
+      void qc.invalidateQueries({ queryKey: queryKeys.weightHistory(user_id) });
     },
   });
 }
@@ -151,9 +145,4 @@ export function useUpdateUser(utgid: number) {
 /** Exposes whether the create flow failed because the user already exists. */
 export function isUserExistsError(err: unknown): boolean {
   return isConflict(err);
-}
-
-/** Ensure the initData header is attached before any request. */
-export function getAuthHeader(): string {
-  return getInitData();
 }

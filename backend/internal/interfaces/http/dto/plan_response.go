@@ -4,7 +4,7 @@ import "github.com/isiyar/daily-energy/backend/internal/domain/models"
 
 type PlanResponse struct {
 	Id                string            `json:"id"`
-	Utgid             int64             `json:"utgid"`
+	UserID             int64             `json:"user_id"`
 	Date              int64             `json:"date"`
 	CaloriesToConsume int               `json:"calories_to_consume"`
 	CaloriesToBurn    int               `json:"calories_to_burn"`
@@ -25,7 +25,7 @@ type AIPlanContent struct {
 func ToPlanResponse(p models.Plan) PlanResponse {
 	return PlanResponse{
 		Id:                p.Id,
-		Utgid:             p.Utgid,
+		UserID:             p.UserID,
 		Date:              p.Date,
 		CaloriesToConsume: p.CaloriesToConsume,
 		CaloriesToBurn:    p.CaloriesToBurn,

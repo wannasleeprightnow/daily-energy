@@ -7,9 +7,10 @@ import (
 	"github.com/isiyar/daily-energy/backend/api/openapi"
 	"github.com/isiyar/daily-energy/backend/config"
 	"github.com/isiyar/daily-energy/backend/internal/interfaces/http/handler"
+	"gorm.io/gorm"
 )
 
-func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
+func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config, db *gorm.DB, chatConnections *handler.ChatConnections) {
 	r.GET("/docs", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<!doctype html>
 <html lang="ru">
@@ -41,37 +42,48 @@ func RegisterRoutes(r gin.IRouter, h *handler.Handler, c config.Config) {
 		c.Data(http.StatusOK, "application/yaml; charset=utf-8", data)
 	})
 	r.GET("/ping", handler.PingHandler)
+	auth := handler.NewAuthHandler(db, c.AllowOrigins, c.SecureCookies, chatConnections)
+	authRoutes := r.Group("/auth")
+	authRoutes.Use(handler.AuthRateLimit())
+	{
+		authRoutes.POST("/register", auth.Register)
+		authRoutes.POST("/login", auth.Login)
+		authRoutes.POST("/refresh", auth.Refresh)
+		authRoutes.POST("/logout", auth.Logout)
+	}
+	protected := handler.AuthMiddleware(db)
+	r.GET("/auth/me", protected, auth.Me)
 
-	users := r.Group("/users", handler.TelegramAuthMiddleware(c.TelegramBotToken))
+	users := r.Group("/users", protected)
 	{
 		users.POST("", h.User.CreateUser)
-		users.GET("/:utgid", h.User.GetUser)
-		users.PUT("/:utgid", h.User.UpdateUser)
-		users.DELETE("/:utgid", h.User.DeleteUser)
+		users.GET("/:user_id", h.User.GetUser)
+		users.PUT("/:user_id", h.User.UpdateUser)
+		users.DELETE("/:user_id", h.User.DeleteUser)
 
-		usersUtgid := users.Group("/:utgid")
+		usersUserID := users.Group("/:user_id")
 		{
-			usersUtgid.POST("/actions", h.Action.CreateAction)
-			usersUtgid.GET("/actions", h.Action.GetActions)
+			usersUserID.POST("/actions", h.Action.CreateAction)
+			usersUserID.GET("/actions", h.Action.GetActions)
 
-			usersUtgid.POST("/plans", h.Plan.CreatePlan)
-			usersUtgid.GET("/plans", h.Plan.GetPlans)
+			usersUserID.POST("/plans", h.Plan.CreatePlan)
+			usersUserID.GET("/plans", h.Plan.GetPlans)
 
-			usersUtgid.GET("/weight-history", h.UserWeightHistory.GetUserWeightHistory)
-			usersUtgid.POST("/weight-history", h.UserWeightHistory.CreateUserWeightHistory)
+			usersUserID.GET("/weight-history", h.UserWeightHistory.GetUserWeightHistory)
+			usersUserID.POST("/weight-history", h.UserWeightHistory.CreateUserWeightHistory)
 		}
 	}
 
-	actions := r.Group("/actions", handler.TelegramAuthMiddleware(c.TelegramBotToken))
+	actions := r.Group("/actions", protected)
 	{
 		actions.GET("/:id", h.Action.GetAction)
 	}
 
-	ai := r.Group("/ai", handler.TelegramAuthMiddleware(c.TelegramBotToken))
+	ai := r.Group("/ai", protected)
 	{
 		ai.POST("/calories", h.Ai.CalculationCalories)
 		ai.POST("/activity-calories", h.Ai.CalculationActivityCalories)
 	}
 
-	r.GET("/ws/chat", handler.TelegramAuthMiddleware(c.TelegramBotToken), h.Chat.HandleChat)
+	r.GET("/ws/chat", protected, h.Chat.HandleChat)
 }

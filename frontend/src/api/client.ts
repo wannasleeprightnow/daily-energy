@@ -1,25 +1,9 @@
-import axios, { type AxiosInstance } from "axios";
+import axios from "axios";
 
-import { API_URL } from "@/constants";
+import { authHttp } from "@/api/auth";
 
-/**
- * Axios instance preconfigured with the backend base URL.
- *
- * Auth: the Telegram `initData` is sent as a header on every request
- * (matching the backend middleware). The value is read lazily from Telegram.
- */
-export const http: AxiosInstance = axios.create({
-  baseURL: API_URL,
-  timeout: 20000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-/** Attach the current Telegram initData as the auth header. */
-export function setAuthHeader(initData: string): void {
-  http.defaults.headers.common["initData"] = initData;
-}
+/** Axios instance with bearer access-token and refresh handling. */
+export const http = authHttp;
 
 /** Extract the raw technical message from a failed request (for debug blocks). */
 export function apiErrorDetails(err: unknown): string {
@@ -36,7 +20,7 @@ export function apiErrorDetails(err: unknown): string {
   return err instanceof Error ? err.message : "unknown error";
 }
 
-const AUTH_MESSAGE = "Не удалось подтвердить вход через Telegram. Открой мини-приложение заново.";
+const AUTH_MESSAGE = "Сессия завершилась. Войди в аккаунт ещё раз.";
 const NETWORK_MESSAGE = "Нет соединения с сервером. Проверь интернет и попробуй ещё раз.";
 const AI_MESSAGE = "Рафик не смог сделать расчёт. Попробуй ещё раз.";
 
@@ -80,7 +64,7 @@ export function apiErrorMessage(err: unknown): string {
   const status = err.response?.status ?? 0;
   const details = apiErrorDetails(err).toLowerCase();
 
-  if (status === 401 || details.includes("initdata")) return AUTH_MESSAGE;
+  if (status === 401) return AUTH_MESSAGE;
   if (matchesAny(details, AI_ERROR_PATTERNS)) return AI_MESSAGE;
   if (details.includes("timeout") || details.includes("timed out") || details.includes("network error")) {
     return NETWORK_MESSAGE;

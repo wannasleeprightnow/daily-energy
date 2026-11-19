@@ -12,10 +12,9 @@ import {
 } from "@/ui/icons";
 import { MONTHS_RU } from "@/constants";
 import { writeDayPick } from "@/features/main/DayContent";
-import { haptic } from "@/lib/telegram";
 
 interface CalendarPageProps {
-  utgid: number;
+  user_id: number;
 }
 
 /**
@@ -29,7 +28,7 @@ interface CalendarPageProps {
  * Picking a day stores it through `writeDayPick()` and routes to the plan or
  * history view for that day, mirroring the Figma flow.
  */
-export function CalendarPage({ utgid }: CalendarPageProps) {
+export function CalendarPage({ user_id }: CalendarPageProps) {
   const navigate = useNavigate();
   const today = useMemo(() => new Date(), []);
   const [view, setView] = useState(
@@ -62,9 +61,8 @@ export function CalendarPage({ utgid }: CalendarPageProps) {
       new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     const mode: "history" | "plan" = isPast ? "history" : "plan";
 
-    writeDayPick(utgid, date, mode);
+    writeDayPick(user_id, date, mode);
     void navigate(`/${mode}/food`);
-    haptic("success");
   };
 
   return (
